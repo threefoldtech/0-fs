@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"path"
 	"strconv"
 	"strings"
 	"syscall"
@@ -21,8 +22,8 @@ type Entry struct {
 	Ctime       time.Time // creation time
 	Mtime       time.Time // modification time
 	Extended    string    // extended attribute (see python flist doc)
-	DevMajor    int64     // block/char device major id
-	DevMinor    int64     // block/char device minor id
+	DevMajor    int       // block/char device major id
+	DevMinor    int       // block/char device minor id
 }
 
 func ParseLine(line string, trim string) (*Entry, error) {
@@ -66,23 +67,25 @@ func ParseLine(line string, trim string) (*Entry, error) {
 		return nil, err
 	}
 
-	devMajor := int64(0)
-	devMinor := int64(0)
+	devMajor := 0
+	devMinor := 0
 
 	if ftype == 3 || ftype == 5 {
 		temp := strings.Split(items[9], ",")
 
-		devMajor, err = strconv.ParseInt(temp[0], 10, 64)
+		dj, err := strconv.ParseInt(temp[0], 10, 0)
 		if err != nil {
 			fmt.Errorf("Error parsing device major id: %v\n", err)
 			return nil, err
 		}
+		devMajor = int(dj)
 
-		devMinor, err = strconv.ParseInt(temp[1], 10, 64)
+		di, err := strconv.ParseInt(temp[1], 10, 0)
 		if err != nil {
 			fmt.Errorf("Error parsing device minor id: %v\n", err)
 			return nil, err
 		}
+		devMinor = int(di)
 	}
 
 	if ftype == 0 {
@@ -138,7 +141,7 @@ func ParseLine(line string, trim string) (*Entry, error) {
 	}, nil
 }
 
-func Populate(store MetaStore, plist string, trim string) error {
+func Populate(store MetaStore, plist string, writable string, trim string) error {
 	f, err := os.Open(plist)
 	if err != nil {
 		return err
@@ -156,9 +159,27 @@ func Populate(store MetaStore, plist string, trim string) error {
 
 		if entry.Filetype == syscall.S_IFDIR ||
 			entry.Filetype == syscall.S_IFREG {
-			log.Debugf("Populate %s", entry.Filepath)
 			store.Populate(*entry)
+			continue
 		}
+
+		name := path.Join(writable, entry.Filepath)
+		dir := path.Dir(name)
+		os.MkdirAll(dir, 0755)
+
+		if entry.Filetype == syscall.S_IFLNK {
+			if err := os.Symlink(entry.Extended, name); err != nil {
+				return err
+			}
+			continue
+		}
+
+		//mknode for all other types
+		dev := entry.DevMajor<<8 | entry.DevMinor
+		if err := syscall.Mknod(name, entry.Filetype|0644, dev); err != nil {
+			return err
+		}
+
 	}
 
 	return nil
