@@ -169,7 +169,7 @@ func Populate(store MetaStore, plist string, writable string, trim string) error
 
 		if entry.Filetype == syscall.S_IFLNK {
 			if err := os.Symlink(entry.Extended, name); err != nil {
-				log.Warning("file '%s' exists", name)
+				log.Warningf("file '%s' exists", name)
 			}
 			continue
 		}
@@ -177,7 +177,7 @@ func Populate(store MetaStore, plist string, writable string, trim string) error
 		//mknode for all other types
 		dev := entry.DevMajor<<8 | entry.DevMinor
 		if err := syscall.Mknod(name, entry.Filetype|0644, dev); err != nil {
-			log.Warning("file '%s' exists", name)
+			log.Warningf("file '%s' exists", name)
 		}
 	}
 

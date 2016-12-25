@@ -111,3 +111,7 @@ func (fs *filesystem) GetXAttr(name string, attr string, context *fuse.Context) 
 func (fs *filesystem) ListXAttr(name string, context *fuse.Context) ([]string, fuse.Status) {
 	return nil, fuse.ENOSYS
 }
+
+func (fs *filesystem) StatFs(name string) *fuse.StatfsOut {
+	return &fuse.StatfsOut{}
+}

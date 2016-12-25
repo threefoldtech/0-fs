@@ -8,10 +8,16 @@ import (
 	"github.com/hanwen/go-fuse/fuse"
 	"github.com/hanwen/go-fuse/fuse/nodefs"
 	"github.com/hanwen/go-fuse/fuse/pathfs"
+	"github.com/op/go-logging"
 	"os"
 	"os/exec"
 	"path"
 	"syscall"
+	"time"
+)
+
+var (
+	log = logging.MustGetLogger("g8ufs")
 )
 
 type Options struct {
@@ -77,7 +83,10 @@ func Mount(opt *Options) (*G8ufs, error) {
 	}
 
 	go server.Serve()
+	log.Debugf("Waiting for fuse mount")
 	server.WaitMount()
+
+	log.Debugf("Fuse mount is complete")
 
 	branch := fmt.Sprintf("%s=RW:%s=RO", rw, ro)
 
@@ -89,6 +98,9 @@ func Mount(opt *Options) (*G8ufs, error) {
 	if err := cmd.Start(); err != nil {
 		return nil, err
 	}
+
+	//TODO: find another way to grantee mount is done.
+	time.Sleep(time.Second)
 
 	return &G8ufs{
 		target: opt.Target,
