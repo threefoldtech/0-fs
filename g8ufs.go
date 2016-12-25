@@ -16,24 +16,30 @@ import (
 
 type Options struct {
 	//PList (required) to mount
-	PList     string
+	PList string
 	//PListTrim (optional) trim prefix of file paths
 	PListTrim string
 	//Backend (required) working directory where the filesystem keeps it's cache and others
 	//will be created if doesn't exist
-	Backend   string
+	Backend string
 	//Mount (required) is the mount point
-	Target    string
+	Target string
 	//MetaStore (optional) will use meta.NewMemoryMeta if not provided
 	MetaStore meta.MetaStore
 	//Storage (required) storage to download files from
-	Storage   storage.Storage
+	Storage storage.Storage
 	//Reset if set, will wipe up the backend clean before mounting.
-	Reset     bool
+	Reset bool
+}
+
+type G8ufs struct {
+	target string
+	server *fuse.Server
+	cmd    *exec.Cmd
 }
 
 //Mount mounts fuse with given options, it blocks forever until unmount is called on the given mount point
-func Mount(opt *Options) error {
+func Mount(opt *Options) (*G8ufs, error) {
 	backend := opt.Backend
 	ro := path.Join(backend, "ro")
 	rw := path.Join(backend, "rw")
@@ -52,7 +58,7 @@ func Mount(opt *Options) error {
 	}
 
 	if err := meta.Populate(metaStore, opt.PList, rw, opt.PListTrim); err != nil {
-		return err
+		return nil, err
 	}
 
 	fs := rofs.New(opt.Storage, metaStore, ca)
@@ -67,29 +73,51 @@ func Mount(opt *Options) error {
 		})
 
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	//TODO: the following code should be moved to the library
-	//so we can reuse it.
 	go server.Serve()
 	server.WaitMount()
 
-	defer server.Unmount()
-
 	branch := fmt.Sprintf("%s=RW:%s=RO", rw, ro)
+
 	cmd := exec.Command("unionfs", "-f",
 		"-o", "cow",
 		"-o", "allow_other",
 		branch, opt.Target)
 
-	if out, err := cmd.CombinedOutput(); err != nil {
-		return fmt.Errorf("error staring union fs: %s\n%s", err, string(out))
+	if err := cmd.Start(); err != nil {
+		return nil, err
 	}
 
-	return nil
+	return &G8ufs{
+		target: opt.Target,
+		server: server,
+		cmd:    cmd,
+	}, nil
 }
 
-func Unmount(mount string) error {
-	return syscall.Unmount(mount, syscall.MNT_FORCE|syscall.MNT_DETACH)
+//Wait filesystem until it's unmounted.
+func (fs *G8ufs) Wait() error {
+	defer fs.server.Unmount()
+	return fs.cmd.Wait()
+}
+
+type errors []interface{}
+
+func (e errors) Error() string {
+	return fmt.Sprint(e...)
+}
+
+func (fs *G8ufs) Unmount() error {
+	var errs errors
+
+	if err := syscall.Unmount(fs.target, syscall.MNT_FORCE|syscall.MNT_DETACH); err != nil {
+		errs = append(errs, err)
+	}
+
+	if err := fs.server.Unmount(); err != nil {
+		errs = append(errs, err)
+	}
+	return errs
 }

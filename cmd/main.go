@@ -38,13 +38,20 @@ func mount(cmd *Cmd, target string) error {
 		return err
 	}
 
-	return g8ufs.Mount(&g8ufs.Options{
+	fs, err := g8ufs.Mount(&g8ufs.Options{
 		PList:   cmd.PList,
 		Backend: cmd.Backend,
 		Target:  target,
 		Storage: aydo,
 		Reset:   cmd.Reset,
 	})
+
+	if err != nil {
+		return err
+	}
+
+	fs.Wait()
+	return nil
 }
 
 func main() {
