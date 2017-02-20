@@ -7,7 +7,11 @@ import (
 	"github.com/hanwen/go-fuse/fuse/nodefs"
 	"github.com/hanwen/go-fuse/fuse/pathfs"
 	"github.com/op/go-logging"
-	"syscall"
+	"math"
+)
+
+const (
+	blkSize = 4 * 1024
 )
 
 var (
@@ -36,23 +40,28 @@ func (fs *filesystem) GetAttr(name string, context *fuse.Context) (*fuse.Attr, f
 	log.Debugf("GetAttr %s", name)
 	m, ok := fs.store.Get(name)
 	if !ok {
-
 		return nil, fuse.ENOENT
 	}
 
-	stat := m.Stat()
-
-	mode := syscall.S_IFREG
-
-	if stat.IsDir {
-		mode = syscall.S_IFDIR
+	info := m.Info()
+	if info.Type == meta.UnknownType {
+		return nil, fuse.ENOSYS
 	}
 
+	nodeType := uint32(info.Type)
+	access := info.Access
+
+	blocks := uint64(math.Ceil(float64(info.Size / blkSize)))
 	return &fuse.Attr{
-		Ino:   stat.Inode,
-		Size:  stat.Size,
-		Mtime: stat.Mtime,
-		Mode:  uint32(mode) | stat.Permissions,
+		Size:   info.Size,
+		Mtime:  uint64(info.ModificationTime),
+		Mode:   nodeType | access.Mode,
+		Blocks: blocks,
+		Owner: fuse.Owner{
+			Uid: access.UID,
+			Gid: access.GID,
+		},
+		Blksize: blkSize, //4K blocks
 	}, fuse.OK
 }
 
@@ -80,15 +89,11 @@ func (fs *filesystem) OpenDir(name string, context *fuse.Context) ([]fuse.DirEnt
 		return nil, fuse.ENOENT
 	}
 	var entries []fuse.DirEntry
-	for child := range m.Children() {
-		stat := child.Stat()
-		mode := syscall.S_IFREG
-		if stat.IsDir {
-			mode = syscall.S_IFDIR
-		}
-
+	for _, child := range m.Children() {
+		info := child.Info()
+		log.Debugf("child '%s', type: %s", child.Name(), info.Type)
 		entries = append(entries, fuse.DirEntry{
-			Mode: uint32(mode),
+			Mode: uint32(info.Type),
 			Name: child.Name(),
 		})
 	}
@@ -102,6 +107,18 @@ func (fs *filesystem) String() string {
 
 func (fs *filesystem) Access(name string, mode uint32, context *fuse.Context) fuse.Status {
 	return fuse.OK
+}
+
+func (fs *filesystem) Readlink(name string, context *fuse.Context) (string, fuse.Status) {
+	log.Debugf("Readlink %s", name)
+	m, ok := fs.store.Get(name)
+	if !ok {
+		return "", fuse.ENOENT
+	}
+
+	info := m.Info()
+
+	return info.LinkTarget, fuse.OK
 }
 
 func (fs *filesystem) GetXAttr(name string, attr string, context *fuse.Context) ([]byte, fuse.Status) {

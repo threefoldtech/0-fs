@@ -33,3 +33,4 @@ Godeps/_workspace
 tags
 *.swp
 cmd/cmd
+g8ufs

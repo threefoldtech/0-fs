@@ -1,9 +1,7 @@
 package rofs
 
 import (
-	"github.com/dsnet/compress/brotli"
 	"github.com/g8os/g8ufs/meta"
-	"io"
 	"os"
 	"path"
 	"syscall"
@@ -21,9 +19,9 @@ func (fs *filesystem) exists(hash string) bool {
 
 func (fs *filesystem) checkAndGet(m meta.Meta) (*os.File, error) {
 	//atomic check and download a file
-	name := fs.path(m.Hash())
-	stat := m.Stat()
-	f, err := os.OpenFile(name, os.O_CREATE|os.O_RDWR, os.ModePerm&os.FileMode(stat.Permissions))
+	name := fs.path(m.ID())
+	info := m.Info()
+	f, err := os.OpenFile(name, os.O_CREATE|os.O_RDWR, os.ModePerm&os.FileMode(0755))
 	if err != nil {
 		return nil, err
 	}
@@ -39,11 +37,11 @@ func (fs *filesystem) checkAndGet(m meta.Meta) (*os.File, error) {
 		return nil, err
 	}
 
-	if fstat.Size() == int64(stat.Size) {
+	if fstat.Size() == int64(info.Size) {
 		return f, nil
 	}
 
-	if err := fs.download(f, m.Hash()); err != nil {
+	if err := fs.download(f, m); err != nil {
 		f.Close()
 		os.Remove(name)
 		return nil, err
@@ -53,27 +51,13 @@ func (fs *filesystem) checkAndGet(m meta.Meta) (*os.File, error) {
 	return f, nil
 }
 
-// download file from stor
-func (fs *filesystem) download(file *os.File, hash string) error {
-	name := fs.path(hash)
-	log.Infof("Downloading file '%s'", name)
-
-	body, err := fs.storage.Get(hash)
-	if err != nil {
-		return err
+// download file from storage
+func (fs *filesystem) download(file *os.File, m meta.Meta) error {
+	downloader := Downloader{
+		Storage:   fs.storage,
+		BlockSize: m.Info().FileBlockSize,
+		Blocks:    m.Blocks(),
 	}
 
-	defer body.Close()
-
-	broReader, err := brotli.NewReader(body, nil)
-	if err != nil {
-		return err
-	}
-
-	if _, err = io.Copy(file, broReader); err != nil {
-		log.Errorf("Error downloading data: %v", err)
-		return err
-	}
-
-	return nil
+	return downloader.Download(file)
 }

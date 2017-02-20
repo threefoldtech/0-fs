@@ -4,13 +4,14 @@ import (
 	"flag"
 	"fmt"
 	"github.com/g8os/g8ufs"
+	"github.com/g8os/g8ufs/meta"
 	"github.com/g8os/g8ufs/storage"
 	"net/url"
 	"os"
 )
 
 type Cmd struct {
-	PList   string
+	MetaDB  string
 	Backend string
 	URL     string
 	Reset   bool
@@ -18,9 +19,9 @@ type Cmd struct {
 
 func (c *Cmd) Validate() []error {
 	var errors []error
-	if c.PList == "" {
+	if c.MetaDB == "" {
 		errors = append(errors,
-			fmt.Errorf("plist is required"),
+			fmt.Errorf("meta is required"),
 		)
 	}
 
@@ -33,17 +34,21 @@ func mount(cmd *Cmd, target string) error {
 		return err
 	}
 
-	aydo, err := storage.NewAydoStorage(u)
+	store, err := meta.NewRocksMeta("", cmd.MetaDB)
+	if err != nil {
+		return fmt.Errorf("failed to initialize meta store: %s", err)
+	}
+	aydo, err := storage.NewARDBStorage(u)
 	if err != nil {
 		return err
 	}
 
 	fs, err := g8ufs.Mount(&g8ufs.Options{
-		PList:   cmd.PList,
-		Backend: cmd.Backend,
-		Target:  target,
-		Storage: aydo,
-		Reset:   cmd.Reset,
+		MetaStore: store,
+		Backend:   cmd.Backend,
+		Target:    target,
+		Storage:   aydo,
+		Reset:     cmd.Reset,
 	})
 
 	if err != nil {
@@ -57,9 +62,9 @@ func mount(cmd *Cmd, target string) error {
 func main() {
 	var cmd Cmd
 	flag.BoolVar(&cmd.Reset, "reset", false, "Reset filesystem on mount")
-	flag.StringVar(&cmd.PList, "plist", "", "Plist to mount")
+	flag.StringVar(&cmd.MetaDB, "meta", "", "Path to metadata database (rocksdb)")
 	flag.StringVar(&cmd.Backend, "backend", "/tmp/backend", "Working directory of the filesystem (cache and others)")
-	flag.StringVar(&cmd.URL, "aydo-url", "https://stor.jumpscale.org/stor2/store/ubuntu-g8os-flist/", "Base aydo URL for the plist")
+	flag.StringVar(&cmd.URL, "storage-url", "ardb://home.maxux.net:26379", "Storage url")
 
 	flag.Parse()
 	if flag.NArg() != 1 {
