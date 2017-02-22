@@ -1,6 +1,7 @@
 package rofs
 
 import (
+	"fmt"
 	"github.com/g8os/g8ufs/meta"
 	"github.com/g8os/g8ufs/storage"
 	"github.com/hanwen/go-fuse/fuse"
@@ -52,6 +53,12 @@ func (fs *filesystem) GetAttr(name string, context *fuse.Context) (*fuse.Attr, f
 	access := info.Access
 
 	blocks := uint64(math.Ceil(float64(info.Size / blkSize)))
+
+	var major, minor uint32
+	if info.SpecialData != "" {
+		fmt.Sscanf(info.SpecialData, "%d,%d", &major, &minor)
+	}
+
 	return &fuse.Attr{
 		Size:   info.Size,
 		Mtime:  uint64(info.ModificationTime),
@@ -61,6 +68,7 @@ func (fs *filesystem) GetAttr(name string, context *fuse.Context) (*fuse.Attr, f
 			Uid: access.UID,
 			Gid: access.GID,
 		},
+		Rdev:    major<<8 | minor,
 		Blksize: blkSize, //4K blocks
 	}, fuse.OK
 }
