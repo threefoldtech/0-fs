@@ -46,10 +46,11 @@ func (fs *filesystem) GetAttr(name string, context *fuse.Context) (*fuse.Attr, f
 
 	info := m.Info()
 	if info.Type == meta.UnknownType {
-		return nil, fuse.ENOSYS
+		return nil, fuse.EIO
 	}
 
 	nodeType := uint32(info.Type)
+
 	access := info.Access
 
 	blocks := uint64(math.Ceil(float64(info.Size / blkSize)))

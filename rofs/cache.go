@@ -20,7 +20,6 @@ func (fs *filesystem) exists(hash string) bool {
 func (fs *filesystem) checkAndGet(m meta.Meta) (*os.File, error) {
 	//atomic check and download a file
 	name := fs.path(m.ID())
-	info := m.Info()
 	f, err := os.OpenFile(name, os.O_CREATE|os.O_RDWR, os.ModePerm&os.FileMode(0755))
 	if err != nil {
 		return nil, err
@@ -37,9 +36,14 @@ func (fs *filesystem) checkAndGet(m meta.Meta) (*os.File, error) {
 		return nil, err
 	}
 
-	if fstat.Size() == int64(info.Size) {
+	//TODO: this should be replace with size comparison (commented out few lines below)
+	if fstat.Size() != 0 {
 		return f, nil
 	}
+
+	//if fstat.Size() == int64(info.Size) {
+	//	return f, nil
+	//}
 
 	if err := fs.download(f, m); err != nil {
 		f.Close()

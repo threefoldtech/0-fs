@@ -35,7 +35,7 @@ func NewRocksMeta(ns string, dbpath string) (MetaStore, error) {
 
 type rocksMeta struct {
 	name  string
-	dir   np.Dir
+	dir   *np.Dir
 	inode np.Inode
 
 	store *rocksMetaStore
@@ -47,7 +47,7 @@ func (rm *rocksMeta) load() {
 	//the meta wasn't already filed in by a previous Meta node.
 
 	rm.o.Do(func() {
-		if rm.dir.HasData() {
+		if rm.dir != nil && rm.dir.HasData() {
 			return
 		}
 
@@ -181,7 +181,8 @@ func (rm *rocksMeta) Info() MetaInfo {
 
 	attrs := rm.inode.Attributes()
 	if !attrs.HasData() {
-		log.Fatalf("'%s' attributes is empty", attrs)
+		log.Errorf("'%s' attributes is empty", attrs)
+		return info
 	}
 
 	if attrs.HasFile() {
@@ -241,52 +242,64 @@ func (rs *rocksMetaStore) hash(namespace string, path string) (string, error) {
 	}
 }
 
-func (rs *rocksMetaStore) dirFromSlice(slice *rocksdb.Slice) np.Dir {
+func (rs *rocksMetaStore) dirFromSlice(slice *rocksdb.Slice) (*np.Dir, error) {
 	msg, err := capnp.NewDecoder(bytes.NewBuffer(slice.Data())).Decode()
 	if err != nil {
-		log.Fatal("invalid capnp Dir message")
+		return nil, err
 	}
 
 	dir, err := np.ReadRootDir(msg)
 	if err != nil {
-		log.Fatal("failed to read Dir message")
+		return nil, err
 	}
 
-	return dir
+	return &dir, nil
 }
 
-func (rs *rocksMetaStore) aciFromSlice(slice *rocksdb.Slice) np.ACI {
+func (rs *rocksMetaStore) aciFromSlice(slice *rocksdb.Slice) (*np.ACI, error) {
 	msg, err := capnp.NewDecoder(bytes.NewBuffer(slice.Data())).Decode()
 	if err != nil {
-		log.Fatal("invalid capnp ACI message")
+		return nil, err
 	}
 
 	aci, err := np.ReadRootACI(msg)
 	if err != nil {
-		log.Fatal("failed to read ACI messeage")
+		return nil, err
 	}
-	return aci
+
+	return &aci, nil
 }
 
-func (rs *rocksMetaStore) getACI(key string) np.ACI {
+func (rs *rocksMetaStore) getACI(key string) (*np.ACI, error) {
 	cKey := fmt.Sprintf("accesskey.%x", key)
 	if aci, ok := rs.cache.Get(cKey); ok {
-		return aci.(np.ACI)
+		return aci.(*np.ACI), nil
 	}
 
 	slice, err := rs.db.Get(rs.ro, []byte(key))
 	if err != nil {
-		log.Fatalf("failed to get ACI (%s) from db: %s", key, err)
+		return nil, err
 	}
 
-	aci := rs.aciFromSlice(slice)
-	rs.cache.Set(cKey, aci, cache.DefaultExpiration)
+	aci, err := rs.aciFromSlice(slice)
+	if err != nil {
+		return nil, err
+	}
 
-	return aci
+	rs.cache.Set(cKey, aci, cache.DefaultExpiration)
+	return aci, nil
 }
 
 func (rs *rocksMetaStore) getAccess(key string) Access {
-	aci := rs.getACI(key)
+	aci, err := rs.getACI(key)
+	if err != nil {
+		return Access{
+			Mode: 0400,
+			UID:  1000,
+			GID:  1000,
+		}
+	}
+
 	uname, _ := aci.Uname()
 	gname, _ := aci.Gname()
 	mode := uint32(aci.Mode())
@@ -330,12 +343,19 @@ func (rs *rocksMetaStore) get(name string, level int) (*rocksMeta, bool) {
 	hash, _ := rs.hash(rs.ns, name)
 	slice, err := rs.db.Get(rs.ro, []byte(hash))
 	if err != nil {
-		log.Fatal(err)
+		log.Errorf("no entry for '%s': %s", name, err)
+		return nil, false
 	}
+
 	defer slice.Free()
 
 	if slice.Size() != 0 {
-		dir := rs.dirFromSlice(slice)
+		dir, err := rs.dirFromSlice(slice)
+
+		if err != nil {
+			log.Errorf("failed to get dir entry: %s", err)
+			return nil, false
+		}
 
 		return &rocksMeta{
 			store: rs,
