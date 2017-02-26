@@ -36,7 +36,7 @@ type OutputBlock struct {
 	Err   error
 }
 
-func (d *Downloader) download(block meta.BlockInfo) ([]byte, error) {
+func (d *Downloader) DownloadBlock(block meta.BlockInfo) ([]byte, error) {
 	log.Debugf("downloading block %s", string(block.Key))
 	body, err := d.Storage.Get(string(block.Key))
 	if err != nil {
@@ -61,7 +61,7 @@ func (d *Downloader) worker(ctx context.Context, feed <-chan *DownloadBlock, out
 			if blk == nil {
 				return
 			}
-			raw, err := d.download(blk.BlockInfo)
+			raw, err := d.DownloadBlock(blk.BlockInfo)
 			result := &OutputBlock{
 				Index: blk.Index,
 				Raw:   raw,
