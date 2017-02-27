@@ -36,14 +36,10 @@ func (fs *filesystem) checkAndGet(m meta.Meta) (*os.File, error) {
 		return nil, err
 	}
 
-	//TODO: this should be replace with size comparison (commented out few lines below)
-	if fstat.Size() != 0 {
+	info := m.Info()
+	if fstat.Size() == int64(info.Size) {
 		return f, nil
 	}
-
-	//if fstat.Size() == int64(info.Size) {
-	//	return f, nil
-	//}
 
 	if err := fs.download(f, m); err != nil {
 		f.Close()
