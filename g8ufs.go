@@ -39,18 +39,12 @@ type Options struct {
 	Storage storage.Storage
 	//Reset if set, will wipe up the backend clean before mounting.
 	Reset bool
-
-	Exec Exec
 }
 
 type G8ufs struct {
 	target string
 	server *fuse.Server
 	cmd    Starter
-}
-
-func DefaultExec(name string, arg ...string) Starter {
-	return exec.Command(name, arg...)
 }
 
 //Mount mounts fuse with given options, it blocks forever until unmount is called on the given mount point
@@ -93,12 +87,7 @@ func Mount(opt *Options) (*G8ufs, error) {
 
 	branch := fmt.Sprintf("%s=RW:%s=RO", rw, ro)
 
-	ex := DefaultExec
-	if opt.Exec != nil {
-		ex = opt.Exec
-	}
-
-	cmd := ex("unionfs", "-f",
+	cmd := exec.Command("unionfs", "-f",
 		"-o", "cow",
 		"-o", "allow_other",
 		"-o", "default_permissions",
@@ -110,8 +99,26 @@ func Mount(opt *Options) (*G8ufs, error) {
 		return nil, err
 	}
 
-	//TODO: find another way to grantee mount is done.
-	time.Sleep(time.Second)
+	success := false
+	for i := 0; i < 5; i++ {
+		//wait for mount point
+		chk := exec.Command("mountpoint", "-q", opt.Target)
+		if err := chk.Run(); err != nil {
+			log.Debugf("mount point still not ready: %s", err)
+			time.Sleep(time.Second)
+			continue
+		}
+		success = true
+		break
+	}
+
+	if !success {
+		if cmd.Process != nil {
+			cmd.Process.Kill()
+		}
+		server.Unmount()
+		return nil, fmt.Errorf("failed to start mount")
+	}
 
 	return &G8ufs{
 		target: opt.Target,

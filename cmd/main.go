@@ -6,6 +6,7 @@ import (
 	"github.com/g8os/g8ufs"
 	"github.com/g8os/g8ufs/meta"
 	"github.com/g8os/g8ufs/storage"
+	"github.com/op/go-logging"
 	"net/url"
 	"os"
 )
@@ -15,6 +16,7 @@ type Cmd struct {
 	Backend string
 	URL     string
 	Reset   bool
+	Debug   bool
 }
 
 func (c *Cmd) Validate() []error {
@@ -54,7 +56,7 @@ func mount(cmd *Cmd, target string) error {
 	if err != nil {
 		return err
 	}
-
+	fmt.Println("mount starts")
 	fs.Wait()
 	return nil
 }
@@ -65,6 +67,13 @@ func main() {
 	flag.StringVar(&cmd.MetaDB, "meta", "", "Path to metadata database (rocksdb)")
 	flag.StringVar(&cmd.Backend, "backend", "/tmp/backend", "Working directory of the filesystem (cache and others)")
 	flag.StringVar(&cmd.URL, "storage-url", "ardb://home.maxux.net:26379", "Storage url")
+	flag.BoolVar(&cmd.Debug, "debug", false, "Print debug messages")
+
+	if cmd.Debug {
+		logging.SetLevel(logging.DEBUG, "")
+	} else {
+		logging.SetLevel(logging.INFO, "")
+	}
 
 	flag.Parse()
 	if flag.NArg() != 1 {
@@ -78,7 +87,7 @@ func main() {
 		}
 		os.Exit(1)
 	}
-	fmt.Println("Reset:", cmd.Reset)
+
 	if err := mount(&cmd, flag.Arg(0)); err != nil {
 		fmt.Fprintf(os.Stderr, "%s\n", err)
 		os.Exit(1)
