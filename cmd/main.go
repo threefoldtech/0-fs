@@ -11,6 +11,8 @@ import (
 	"os"
 )
 
+var log = logging.MustGetLogger("main")
+
 type Cmd struct {
 	MetaDB  string
 	Backend string
@@ -69,16 +71,19 @@ func main() {
 	flag.StringVar(&cmd.URL, "storage-url", "ardb://home.maxux.net:26379", "Storage url")
 	flag.BoolVar(&cmd.Debug, "debug", false, "Print debug messages")
 
-	if cmd.Debug {
-		logging.SetLevel(logging.DEBUG, "")
-	} else {
-		logging.SetLevel(logging.INFO, "")
-	}
-
 	flag.Parse()
 	if flag.NArg() != 1 {
 		fmt.Fprintf(os.Stderr, "Missing mount point argument\n")
 		os.Exit(1)
+	}
+
+	formatter := logging.MustStringFormatter("%{time}: %{color}%{module} %{level:.1s} > %{message} %{color:reset}")
+	logging.SetFormatter(formatter)
+
+	if cmd.Debug {
+		logging.SetLevel(logging.DEBUG, "")
+	} else {
+		logging.SetLevel(logging.INFO, "")
 	}
 
 	if errs := cmd.Validate(); errs != nil {
