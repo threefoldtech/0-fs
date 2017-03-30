@@ -18,6 +18,10 @@ import (
 	"zombiezen.com/go/capnproto2"
 )
 
+const (
+	TraverseLimit = ^uint64(0)
+)
+
 func NewRocksMeta(ns string, dbpath string) (MetaStore, error) {
 	opt := rocksdb.NewDefaultOptions()
 	db, err := rocksdb.OpenDbForReadOnly(opt, dbpath, true)
@@ -247,7 +251,7 @@ func (rs *rocksMetaStore) dirFromSlice(slice *rocksdb.Slice) (*np.Dir, error) {
 	if err != nil {
 		return nil, err
 	}
-
+	msg.TraverseLimit = TraverseLimit
 	dir, err := np.ReadRootDir(msg)
 	if err != nil {
 		return nil, err
@@ -261,7 +265,7 @@ func (rs *rocksMetaStore) aciFromSlice(slice *rocksdb.Slice) (*np.ACI, error) {
 	if err != nil {
 		return nil, err
 	}
-
+	msg.TraverseLimit = TraverseLimit
 	aci, err := np.ReadRootACI(msg)
 	if err != nil {
 		return nil, err
