@@ -90,6 +90,8 @@ func Mount(opt *Options) (*G8ufs, error) {
 	cmd := exec.Command("unionfs", "-f",
 		"-o", "cow",
 		"-o", "allow_other",
+		"-o", "suid",
+		"-o", "dev",
 		"-o", "default_permissions",
 		"-o", "attr_timeout=0",
 		"-o", "entry_timeout=0",
