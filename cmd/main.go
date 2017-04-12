@@ -70,7 +70,7 @@ func main() {
 	flag.BoolVar(&cmd.Reset, "reset", false, "Reset filesystem on mount")
 	flag.StringVar(&cmd.MetaDB, "meta", "", "Path to metadata database (rocksdb)")
 	flag.StringVar(&cmd.Backend, "backend", "/tmp/backend", "Working directory of the filesystem (cache and others)")
-	flag.StringVar(&cmd.URL, "storage-url", "ardb://home.maxux.net:26379", "Storage url")
+	flag.StringVar(&cmd.URL, "storage-url", "ardb://hub.gig.tech:16379", "Storage url")
 	flag.BoolVar(&cmd.Debug, "debug", false, "Print debug messages")
 
 	flag.Parse()
