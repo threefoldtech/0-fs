@@ -65,6 +65,8 @@ func mount(cmd *Cmd, target string) error {
 
 func main() {
 	var cmd Cmd
+	var version bool
+	flag.BoolVar(&version, "version", false, "Print version and exit")
 	flag.BoolVar(&cmd.Reset, "reset", false, "Reset filesystem on mount")
 	flag.StringVar(&cmd.MetaDB, "meta", "", "Path to metadata database (rocksdb)")
 	flag.StringVar(&cmd.Backend, "backend", "/tmp/backend", "Working directory of the filesystem (cache and others)")
@@ -72,6 +74,12 @@ func main() {
 	flag.BoolVar(&cmd.Debug, "debug", false, "Print debug messages")
 
 	flag.Parse()
+
+	if version {
+		fmt.Println(g8ufs.Version())
+		os.Exit(0)
+	}
+
 	if flag.NArg() != 1 {
 		fmt.Fprintf(os.Stderr, "Missing mount point argument\n")
 		os.Exit(1)
