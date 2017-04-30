@@ -31,6 +31,9 @@ type Options struct {
 	//Backend (required) working directory where the filesystem keeps it's cache and others
 	//will be created if doesn't exist
 	Backend string
+	//Cache location where downloaded files are gonna be kept (optional). If not provided
+	//a cache directly will be created under the backend.
+	Cache string
 	//Mount (required) is the mount point
 	Target string
 	//MetaStore (optional) will use meta.NewMemoryMeta if not provided
@@ -55,10 +58,17 @@ func Mount(opt *Options) (*G8ufs, error) {
 	backend := opt.Backend
 	ro := path.Join(backend, "ro") //ro lower layer provided by fuse
 	rw := path.Join(backend, "rw") //rw upper layer on filyestem
-	ca := path.Join(backend, "ca") //ca cache for downloaded files used by fuse
 	wd := path.Join(backend, "wd") //wd workdir used by overlayfs
+	toSetup := []string{ro, rw, wd}
+	ca := path.Join(backend, "ca") //ca cache for downloaded files used by fuse
+	if opt.Cache != "" {
+		ca = opt.Cache
+		os.MkdirAll(ca, 0755)
+	} else {
+		toSetup = append(toSetup, ca)
+	}
 
-	for _, name := range []string{ro, rw, ca, wd} {
+	for _, name := range toSetup {
 		if opt.Reset {
 			os.RemoveAll(name)
 		}

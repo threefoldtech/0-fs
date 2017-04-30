@@ -16,6 +16,7 @@ var log = logging.MustGetLogger("main")
 type Cmd struct {
 	MetaDB  string
 	Backend string
+	Cache   string
 	URL     string
 	Reset   bool
 	Debug   bool
@@ -50,6 +51,7 @@ func mount(cmd *Cmd, target string) error {
 	fs, err := g8ufs.Mount(&g8ufs.Options{
 		MetaStore: store,
 		Backend:   cmd.Backend,
+		Cache:     cmd.Cache,
 		Target:    target,
 		Storage:   aydo,
 		Reset:     cmd.Reset,
@@ -70,6 +72,7 @@ func main() {
 	flag.BoolVar(&cmd.Reset, "reset", false, "Reset filesystem on mount")
 	flag.StringVar(&cmd.MetaDB, "meta", "", "Path to metadata database (rocksdb)")
 	flag.StringVar(&cmd.Backend, "backend", "/tmp/backend", "Working directory of the filesystem (cache and others)")
+	flag.StringVar(&cmd.Cache, "cache", "", "Optional external (common) cache directory, if not provided a temporary cache location will be created under `backend`")
 	flag.StringVar(&cmd.URL, "storage-url", "ardb://hub.gig.tech:16379", "Storage url")
 	flag.BoolVar(&cmd.Debug, "debug", false, "Print debug messages")
 

@@ -11,12 +11,6 @@ func (fs *filesystem) path(hash string) string {
 	return path.Join(fs.cache, hash)
 }
 
-func (fs *filesystem) exists(hash string) bool {
-	name := path.Join(fs.cache, hash)
-	_, err := os.Stat(name)
-	return !os.IsNotExist(err)
-}
-
 func (fs *filesystem) checkAndGet(m meta.Meta) (*os.File, error) {
 	//atomic check and download a file
 	name := fs.path(m.ID())

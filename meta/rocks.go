@@ -44,6 +44,9 @@ type rocksMeta struct {
 
 	store *rocksMetaStore
 	o     sync.Once
+
+	blks []BlockInfo
+	bo   sync.Once
 }
 
 func (rm *rocksMeta) load() {
@@ -74,7 +77,9 @@ func (rm *rocksMeta) String() string {
 
 func (rm *rocksMeta) ID() string {
 	m := md5.New()
-	io.WriteString(m, rm.name)
+	for _, blk := range rm.Blocks() {
+		m.Write(blk.Key)
+	}
 	return fmt.Sprintf("%x", m.Sum(nil))
 }
 
@@ -83,20 +88,20 @@ func (rm *rocksMeta) Name() string {
 	return path.Base(rm.name)
 }
 
-func (rm *rocksMeta) Blocks() []BlockInfo {
+func (rm *rocksMeta) blocks() {
 	rm.load()
 	var blocks []BlockInfo
 	if !rm.inode.HasData() {
-		return blocks
+		return
 	}
 
 	attrs := rm.inode.Attributes()
 	if !attrs.HasFile() {
-		return blocks
+		return
 	}
 	file, _ := attrs.File()
 	if !file.HasBlocks() {
-		return blocks
+		return
 	}
 
 	cblocks, _ := file.Blocks()
@@ -111,7 +116,12 @@ func (rm *rocksMeta) Blocks() []BlockInfo {
 		})
 	}
 
-	return blocks
+	rm.blks = blocks
+}
+
+func (rm *rocksMeta) Blocks() []BlockInfo {
+	rm.bo.Do(rm.blocks)
+	return rm.blks
 }
 
 func (rm *rocksMeta) Children() []Meta {
