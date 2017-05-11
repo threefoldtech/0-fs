@@ -31,3 +31,5 @@ cl.btrfs.create('fscache', devices, 'single', 'single')
 # mount the disk to /var/cache/containers
 cl.disk.mount(device_name, '/var/cache/containers')
 ```
+
+See the [Table of Contents](SUMMARY.md) for all documentation.
