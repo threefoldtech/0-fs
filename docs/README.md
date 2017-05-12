@@ -34,4 +34,4 @@ cl.disk.mount(device_name, '/var/cache/containers')
 
 See the [Table of Contents](SUMMARY.md) for more documentation on G8ufs.
 
-In [Getting Started](gettingstarted/gettingstarted.md) you find the recommended path to quickly get up and running with G8ufs.
+In [Getting Started with G8ufs](gettingstarted/gettingstarted.md) you find the recommended path to quickly get up and running.
