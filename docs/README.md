@@ -32,4 +32,6 @@ cl.btrfs.create('fscache', devices, 'single', 'single')
 cl.disk.mount(device_name, '/var/cache/containers')
 ```
 
-See the [Table of Contents](SUMMARY.md) for all documentation.
+See the [Table of Contents](SUMMARY.md) for more documentation on G8ufs.
+
+In [Getting Started](gettingstarted/gettingstarted.md) you find the recommended path to quickly get up and running with G8ufs.
