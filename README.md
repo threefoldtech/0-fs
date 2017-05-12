@@ -49,4 +49,4 @@ Usage of ./g8ufs:
 
 All documentation is in the [`/docs`](./docs) directory, including a [table of contents](/docs/SUMMARY.md).
 
-In [Getting Started with G8ufs](gettingstarted/gettingstarted.md) you find the recommended path to quickly get up and running.
+In [Getting Started with G8ufs](/docs/gettingstarted/gettingstarted.md) you find the recommended path to quickly get up and running.
