@@ -11,9 +11,12 @@ import (
 	"os"
 )
 
+var log = logging.MustGetLogger("main")
+
 type Cmd struct {
 	MetaDB  string
 	Backend string
+	Cache   string
 	URL     string
 	Reset   bool
 	Debug   bool
@@ -48,6 +51,7 @@ func mount(cmd *Cmd, target string) error {
 	fs, err := g8ufs.Mount(&g8ufs.Options{
 		MetaStore: store,
 		Backend:   cmd.Backend,
+		Cache:     cmd.Cache,
 		Target:    target,
 		Storage:   aydo,
 		Reset:     cmd.Reset,
@@ -63,22 +67,34 @@ func mount(cmd *Cmd, target string) error {
 
 func main() {
 	var cmd Cmd
+	var version bool
+	flag.BoolVar(&version, "version", false, "Print version and exit")
 	flag.BoolVar(&cmd.Reset, "reset", false, "Reset filesystem on mount")
 	flag.StringVar(&cmd.MetaDB, "meta", "", "Path to metadata database (rocksdb)")
 	flag.StringVar(&cmd.Backend, "backend", "/tmp/backend", "Working directory of the filesystem (cache and others)")
-	flag.StringVar(&cmd.URL, "storage-url", "ardb://home.maxux.net:26379", "Storage url")
+	flag.StringVar(&cmd.Cache, "cache", "", "Optional external (common) cache directory, if not provided a temporary cache location will be created under `backend`")
+	flag.StringVar(&cmd.URL, "storage-url", "ardb://hub.gig.tech:16379", "Storage url")
 	flag.BoolVar(&cmd.Debug, "debug", false, "Print debug messages")
+
+	flag.Parse()
+
+	if version {
+		fmt.Println(g8ufs.Version())
+		os.Exit(0)
+	}
+
+	if flag.NArg() != 1 {
+		fmt.Fprintf(os.Stderr, "Missing mount point argument\n")
+		os.Exit(1)
+	}
+
+	formatter := logging.MustStringFormatter("%{time}: %{color}%{module} %{level:.1s} > %{message} %{color:reset}")
+	logging.SetFormatter(formatter)
 
 	if cmd.Debug {
 		logging.SetLevel(logging.DEBUG, "")
 	} else {
 		logging.SetLevel(logging.INFO, "")
-	}
-
-	flag.Parse()
-	if flag.NArg() != 1 {
-		fmt.Fprintf(os.Stderr, "Missing mount point argument\n")
-		os.Exit(1)
 	}
 
 	if errs := cmd.Validate(); errs != nil {

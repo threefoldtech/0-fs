@@ -60,8 +60,13 @@ func (fs *filesystem) GetAttr(name string, context *fuse.Context) (*fuse.Attr, f
 		fmt.Sscanf(info.SpecialData, "%d,%d", &major, &minor)
 	}
 
+	size := info.Size
+	if info.Type == meta.LinkType {
+		size = uint64(len(info.LinkTarget))
+	}
+
 	return &fuse.Attr{
-		Size:   info.Size,
+		Size:   size,
 		Mtime:  uint64(info.ModificationTime),
 		Mode:   nodeType | access.Mode,
 		Blocks: blocks,
@@ -131,10 +136,12 @@ func (fs *filesystem) Readlink(name string, context *fuse.Context) (string, fuse
 }
 
 func (fs *filesystem) GetXAttr(name string, attr string, context *fuse.Context) ([]byte, fuse.Status) {
+	log.Debugf("GetXAttr %s", name)
 	return nil, fuse.ENOSYS
 }
 
 func (fs *filesystem) ListXAttr(name string, context *fuse.Context) ([]string, fuse.Status) {
+	log.Debugf("ListXAttr %s", name)
 	return nil, fuse.ENOSYS
 }
 

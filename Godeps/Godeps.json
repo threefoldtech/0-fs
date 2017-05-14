@@ -1,0 +1,113 @@
+{
+	"ImportPath": "github.com/g8os/g8ufs",
+	"GoVersion": "go1.8",
+	"GodepVersion": "v79",
+	"Packages": [
+		"./..."
+	],
+	"Deps": [
+		{
+			"ImportPath": "github.com/cockroachdb/c-jemalloc",
+			"Rev": "7eb7980d8a9f68b771568a7eb15196a63a818595"
+		},
+		{
+			"ImportPath": "github.com/cockroachdb/c-lz4",
+			"Rev": "834d3303c9e84b1045bc57c3eb3723ee8cb4d33b"
+		},
+		{
+			"ImportPath": "github.com/cockroachdb/c-rocksdb",
+			"Rev": "608bf6179ca8b317e707394d263059a933808e2f"
+		},
+		{
+			"ImportPath": "github.com/cockroachdb/c-snappy",
+			"Rev": "c0cd3c9ce92f195001595e1fbbe66f045daad34f"
+		},
+		{
+			"ImportPath": "github.com/codahale/blake2",
+			"Rev": "8d10d0420cbfbdc9c1164c0c4ad3457a6c3771b9"
+		},
+		{
+			"ImportPath": "github.com/garyburd/redigo/internal",
+			"Rev": "836b6e58b3358112c8291565d01c35b8764070d7"
+		},
+		{
+			"ImportPath": "github.com/garyburd/redigo/redis",
+			"Rev": "836b6e58b3358112c8291565d01c35b8764070d7"
+		},
+		{
+			"ImportPath": "github.com/glycerine/rbtree",
+			"Rev": "cd7940bb26b149ce2faf398e7c63fff01aa7b394"
+		},
+		{
+			"ImportPath": "github.com/golang/snappy",
+			"Rev": "d9eb7a3d35ec988b8585d4a0068e462c27d28380"
+		},
+		{
+			"ImportPath": "github.com/hanwen/go-fuse/fuse",
+			"Rev": "ed841342e5daf4711f24106b93c1035864a8914b"
+		},
+		{
+			"ImportPath": "github.com/hanwen/go-fuse/fuse/nodefs",
+			"Rev": "ed841342e5daf4711f24106b93c1035864a8914b"
+		},
+		{
+			"ImportPath": "github.com/hanwen/go-fuse/fuse/pathfs",
+			"Rev": "ed841342e5daf4711f24106b93c1035864a8914b"
+		},
+		{
+			"ImportPath": "github.com/hanwen/go-fuse/splice",
+			"Rev": "ed841342e5daf4711f24106b93c1035864a8914b"
+		},
+		{
+			"ImportPath": "github.com/op/go-logging",
+			"Comment": "v1-7-g970db52",
+			"Rev": "970db520ece77730c7e4724c61121037378659d9"
+		},
+		{
+			"ImportPath": "github.com/patrickmn/go-cache",
+			"Rev": "1881a9bccb818787f68c52bfba648c6cf34c34fa"
+		},
+		{
+			"ImportPath": "github.com/tecbot/gorocksdb",
+			"Rev": "b5e241f52bbe85991d373653545de2fb843398b5"
+		},
+		{
+			"ImportPath": "github.com/xxtea/xxtea-go/xxtea",
+			"Rev": "4cdb8b82de87ead374fae2c3715ef04a14d3f4fb"
+		},
+		{
+			"ImportPath": "golang.org/x/net/context",
+			"Rev": "236b8f043b920452504e263bc21d354427127473"
+		},
+		{
+			"ImportPath": "zombiezen.com/go/capnproto2",
+			"Comment": "v2.12.4",
+			"Rev": "a094e8b41eb423fd4114149c55bbbc345aefd1a3"
+		},
+		{
+			"ImportPath": "zombiezen.com/go/capnproto2/encoding/text",
+			"Comment": "v2.12.4",
+			"Rev": "a094e8b41eb423fd4114149c55bbbc345aefd1a3"
+		},
+		{
+			"ImportPath": "zombiezen.com/go/capnproto2/internal/nodemap",
+			"Comment": "v2.12.4",
+			"Rev": "a094e8b41eb423fd4114149c55bbbc345aefd1a3"
+		},
+		{
+			"ImportPath": "zombiezen.com/go/capnproto2/internal/packed",
+			"Comment": "v2.12.4",
+			"Rev": "a094e8b41eb423fd4114149c55bbbc345aefd1a3"
+		},
+		{
+			"ImportPath": "zombiezen.com/go/capnproto2/schemas",
+			"Comment": "v2.12.4",
+			"Rev": "a094e8b41eb423fd4114149c55bbbc345aefd1a3"
+		},
+		{
+			"ImportPath": "zombiezen.com/go/capnproto2/std/capnp/schema",
+			"Comment": "v2.12.4",
+			"Rev": "a094e8b41eb423fd4114149c55bbbc345aefd1a3"
+		}
+	]
+}

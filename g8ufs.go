@@ -31,6 +31,9 @@ type Options struct {
 	//Backend (required) working directory where the filesystem keeps it's cache and others
 	//will be created if doesn't exist
 	Backend string
+	//Cache location where downloaded files are gonna be kept (optional). If not provided
+	//a cache directly will be created under the backend.
+	Cache string
 	//Mount (required) is the mount point
 	Target string
 	//MetaStore (optional) will use meta.NewMemoryMeta if not provided
@@ -43,8 +46,8 @@ type Options struct {
 
 type G8ufs struct {
 	target string
+	fuse   string
 	server *fuse.Server
-	cmd    Starter
 }
 
 //Mount mounts fuse with given options, it blocks forever until unmount is called on the given mount point
@@ -53,11 +56,19 @@ func Mount(opt *Options) (*G8ufs, error) {
 		return nil, fmt.Errorf("missing meta store")
 	}
 	backend := opt.Backend
-	ro := path.Join(backend, "ro")
-	rw := path.Join(backend, "rw")
-	ca := path.Join(backend, "ca")
+	ro := path.Join(backend, "ro") //ro lower layer provided by fuse
+	rw := path.Join(backend, "rw") //rw upper layer on filyestem
+	wd := path.Join(backend, "wd") //wd workdir used by overlayfs
+	toSetup := []string{ro, rw, wd}
+	ca := path.Join(backend, "ca") //ca cache for downloaded files used by fuse
+	if opt.Cache != "" {
+		ca = opt.Cache
+		os.MkdirAll(ca, 0755)
+	} else {
+		toSetup = append(toSetup, ca)
+	}
 
-	for _, name := range []string{ro, rw, ca} {
+	for _, name := range toSetup {
 		if opt.Reset {
 			os.RemoveAll(name)
 		}
@@ -85,17 +96,18 @@ func Mount(opt *Options) (*G8ufs, error) {
 
 	log.Debugf("Fuse mount is complete")
 
-	branch := fmt.Sprintf("%s=RW:%s=RO", rw, ro)
+	err = syscall.Mount("overlay",
+		opt.Target,
+		"overlay",
+		syscall.MS_NOATIME,
+		fmt.Sprintf(
+			"lowerdir=%s,upperdir=%s,workdir=%s",
+			ro, rw, wd,
+		),
+	)
 
-	cmd := exec.Command("unionfs", "-f",
-		"-o", "cow",
-		"-o", "allow_other",
-		"-o", "default_permissions",
-		"-o", "attr_timeout=0",
-		"-o", "entry_timeout=0",
-		branch, opt.Target)
-
-	if err := cmd.Start(); err != nil {
+	if err != nil {
+		server.Unmount()
 		return nil, err
 	}
 
@@ -113,9 +125,6 @@ func Mount(opt *Options) (*G8ufs, error) {
 	}
 
 	if !success {
-		if cmd.Process != nil {
-			cmd.Process.Kill()
-		}
 		server.Unmount()
 		return nil, fmt.Errorf("failed to start mount")
 	}
@@ -123,20 +132,47 @@ func Mount(opt *Options) (*G8ufs, error) {
 	return &G8ufs{
 		target: opt.Target,
 		server: server,
-		cmd:    cmd,
+		fuse:   ro,
 	}, nil
 }
 
 //Wait filesystem until it's unmounted.
 func (fs *G8ufs) Wait() error {
-	defer fs.server.Unmount()
-	return fs.cmd.Wait()
+	defer func() {
+		fs.umountFuse()
+	}()
+	//Wait for filesystem to be unmounted.
+	fd, err := syscall.InotifyInit()
+	if err != nil {
+		return err
+	}
+
+	defer syscall.Close(fd)
+
+	if _, err := syscall.InotifyAddWatch(fd, fs.target, syscall.IN_UNMOUNT); err != nil {
+		return err
+	}
+
+	buff := make([]byte, syscall.SizeofInotifyEvent)
+	if _, err := syscall.Read(fd, buff); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 type errors []interface{}
 
 func (e errors) Error() string {
 	return fmt.Sprint(e...)
+}
+
+func (fs *G8ufs) umountFuse() error {
+	if err := syscall.Unmount(fs.fuse, syscall.MNT_FORCE|syscall.MNT_DETACH); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (fs *G8ufs) Unmount() error {
@@ -146,8 +182,9 @@ func (fs *G8ufs) Unmount() error {
 		errs = append(errs, err)
 	}
 
-	if err := fs.server.Unmount(); err != nil {
+	if err := fs.umountFuse(); err != nil {
 		errs = append(errs, err)
 	}
+
 	return errs
 }
