@@ -61,7 +61,11 @@ func mount(cmd *Cmd, target string) error {
 		return err
 	}
 	fmt.Println("mount starts")
-	fs.Wait()
+	if err := fs.Wait(); err != nil {
+		fmt.Fprintf(os.Stderr, "exit with error: %s", err)
+		os.Exit(1)
+	}
+
 	return nil
 }
 

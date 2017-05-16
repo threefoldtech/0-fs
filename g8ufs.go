@@ -141,21 +141,13 @@ func (fs *G8ufs) Wait() error {
 	defer func() {
 		fs.umountFuse()
 	}()
-	//Wait for filesystem to be unmounted.
-	fd, err := syscall.InotifyInit()
-	if err != nil {
-		return err
-	}
 
-	defer syscall.Close(fd)
-
-	if _, err := syscall.InotifyAddWatch(fd, fs.target, syscall.IN_UNMOUNT); err != nil {
-		return err
-	}
-
-	buff := make([]byte, syscall.SizeofInotifyEvent)
-	if _, err := syscall.Read(fd, buff); err != nil {
-		return err
+	for {
+		cmd := exec.Command("mountpoint", "-q", fs.target)
+		if err := cmd.Run(); err != nil {
+			return nil
+		}
+		<-time.After(1 * time.Second)
 	}
 
 	return nil
