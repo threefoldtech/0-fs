@@ -5,7 +5,7 @@ import (
 	"crypto/md5"
 	"fmt"
 	"github.com/codahale/blake2"
-	"github.com/g8os/g8ufs/cap.np"
+	"github.com/Zero-OS/0-FS/cap.np"
 	"github.com/patrickmn/go-cache"
 	rocksdb "github.com/tecbot/gorocksdb"
 	"io"

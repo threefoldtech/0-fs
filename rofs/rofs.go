@@ -2,8 +2,8 @@ package rofs
 
 import (
 	"fmt"
-	"github.com/g8os/g8ufs/meta"
-	"github.com/g8os/g8ufs/storage"
+	"github.com/Zero-OS/0-FS/meta"
+	"github.com/Zero-OS/0-FS/storage"
 	"github.com/hanwen/go-fuse/fuse"
 	"github.com/hanwen/go-fuse/fuse/nodefs"
 	"github.com/hanwen/go-fuse/fuse/pathfs"

@@ -1,7 +1,7 @@
 package rofs
 
 import (
-	"github.com/g8os/g8ufs/meta"
+	"github.com/Zero-OS/0-FS/meta"
 	"os"
 	"path"
 	"syscall"
