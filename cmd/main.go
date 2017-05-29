@@ -3,9 +3,9 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/Zero-OS/0-FS"
-	"github.com/Zero-OS/0-FS/meta"
-	"github.com/Zero-OS/0-FS/storage"
+	"github.com/zero-os/0-fs"
+	"github.com/zero-os/0-fs/meta"
+	"github.com/zero-os/0-fs/storage"
 	"github.com/op/go-logging"
 	"net/url"
 	"os"
