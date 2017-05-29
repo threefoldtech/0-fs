@@ -3,8 +3,8 @@ package rofs
 import (
 	"context"
 	"fmt"
-	"github.com/Zero-OS/0-FS/meta"
-	"github.com/Zero-OS/0-FS/storage"
+	"github.com/zero-os/0-fs/meta"
+	"github.com/zero-os/0-fs/storage"
 	"github.com/golang/snappy"
 	"github.com/xxtea/xxtea-go/xxtea"
 	"io/ioutil"
