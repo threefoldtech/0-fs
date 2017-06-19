@@ -1,17 +1,19 @@
 # Hub
 
-Containers boot from flist files, containing only metadata about the actual container image files, and loads the required files from the G8OS Hub when needed.
+@todo link/move this to 0-hub/docs/...
 
-The G8OS Hub is where all container images are stored. The official G8OS Hub is active on https://hub.gig.tech/, here you find all flists shared by the G8OS community.
+Containers boot from flist files, containing only metadata about the actual container image files, and loads the required files from the Zero-OS Hub when needed.
+
+The Zero-OS Hub is where all container images are stored. The official Zero-OS Hub is active on https://hub.gig.tech/, here you find all flists shared by the Zero-OS community.
 
 See for instance the Ubuntu 16.04 flist of Ubuntu 16.04: https://hub.gig.tech/gig-official-apps/flist-ubuntu1604.flist
 
-Setting up your own (private) G8OS Hub is also supported, see https://github.com/g8os/hub.
+Setting up your own (private) Zero-OS Hub is also supported, see https://github.com/zero-os/0-hub.
 
 
 ## Setting up your own Hub instance
 
-All the code for the Hub can be found on https://github.com/g8os/hub
+All the code for the Hub can be found on https://github.com/zero-os/0-hub
 
 The README explains how to deploy your own instance.
 

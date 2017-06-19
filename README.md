@@ -1,8 +1,8 @@
-# G8ufs
+# 0-fs
 
-G8ufs is the fuse file system of G8OS.
+0-fs is the fuse file system of Zero-OS.
 
-G8ufs can be mounted only using a relatively small meta data database (currently support RocksDB). On accessing
+0-fs can be mounted only using a relatively small meta data database (currently support RocksDB). On accessing
 the file it fetches the required file chunks from a remote store, and cache it locally. The idea of using this file system
 is to speed up container creation by just mounting the container root from any image metadata file (we call it a `flist` file) and once
 the container starts, it fetches only the required files from the remote store. So no need to clone large images locally.
@@ -49,4 +49,4 @@ Usage of ./g8ufs:
 
 All documentation is in the [`/docs`](./docs) directory, including a [table of contents](/docs/SUMMARY.md).
 
-In [Getting Started with G8ufs](/docs/gettingstarted/gettingstarted.md) you find the recommended path to quickly get up and running.
+In [Getting Started with 0-fs](/docs/gettingstarted/README.md) you find the recommended path to quickly get up and running.
