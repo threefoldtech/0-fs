@@ -1,6 +1,6 @@
 # Merging Flists
 
-Why merging two flists? Imagine you have two applications, each running in their own container, for which you have a two distinct flists, and you want to have borh application run in the same container, using one single flist.
+Why merging two flists? Imagine you have two applications, each running in their own container, for which you have a two distinct flists, and you want to have both application run in the same container, using one single flist.
 
 The flist library in JumpScale provides you with a tool to merge two or more flists.
 
