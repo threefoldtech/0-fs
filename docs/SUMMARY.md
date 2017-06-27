@@ -5,4 +5,3 @@
 * [Zero-OS Flists](flists/README.md)
   * [Creating Flists](flists/creating.md)
   * [Merging Flists](flists/merging.md)
-* [Zero-OS Hub](hub/README.md)
