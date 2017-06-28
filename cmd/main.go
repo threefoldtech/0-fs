@@ -1,14 +1,19 @@
 package main
 
 import (
+	"archive/tar"
+	"compress/gzip"
 	"flag"
 	"fmt"
+	"io"
+	"net/url"
+	"os"
+	"path"
+
+	"github.com/op/go-logging"
 	"github.com/zero-os/0-fs"
 	"github.com/zero-os/0-fs/meta"
 	"github.com/zero-os/0-fs/storage"
-	"github.com/op/go-logging"
-	"net/url"
-	"os"
 )
 
 var log = logging.MustGetLogger("main")
@@ -39,6 +44,24 @@ func mount(cmd *Cmd, target string) error {
 		return err
 	}
 
+	// Test if the meta path is a directory
+	// if not, it's maybe a flist/tar.gz
+	f, err := os.Open(cmd.MetaDB)
+	if err != nil {
+		return err
+	}
+	info, err := f.Stat()
+	if err != nil {
+		return err
+	}
+	if !info.IsDir() {
+		err = unpack(f, cmd.MetaDB+".d")
+		if err != nil {
+			log.Error(err)
+		}
+		cmd.MetaDB = cmd.MetaDB + ".d"
+	}
+
 	store, err := meta.NewRocksMeta("", cmd.MetaDB)
 	if err != nil {
 		return fmt.Errorf("failed to initialize meta store: %s", err)
@@ -67,6 +90,48 @@ func mount(cmd *Cmd, target string) error {
 	}
 
 	return nil
+}
+
+// unpack decrompress and unpackt a tgz archive from r to dest folder
+// dest is created is it doesn't exist
+func unpack(r io.Reader, dest string) error {
+	err := os.MkdirAll(dest, 0770)
+	if err != nil {
+		return err
+	}
+
+	zr, err := gzip.NewReader(r)
+	if err != nil {
+		return err
+	}
+	tr := tar.NewReader(zr)
+	// Iterate through the files in the archive.
+	for {
+		hdr, err := tr.Next()
+		if err == io.EOF {
+			// end of tar archive
+			break
+		}
+		if err != nil {
+			return err
+		}
+		if hdr.Name == "/" {
+			continue
+		}
+
+		f, err := os.OpenFile(path.Join(dest, hdr.Name), os.O_CREATE|os.O_TRUNC|os.O_WRONLY, os.FileMode(hdr.Mode))
+		if err != nil {
+			log.Error(err)
+			return err
+		}
+		if _, err := io.Copy(f, tr); err != nil {
+			return err
+		}
+
+		f.Close()
+	}
+
+	return err
 }
 
 func main() {
