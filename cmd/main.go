@@ -58,8 +58,9 @@ func mount(cmd *Cmd, target string) error {
 		err = unpack(f, cmd.MetaDB+".d")
 		if err != nil {
 			log.Error(err)
+		} else {
+			cmd.MetaDB = cmd.MetaDB + ".d"
 		}
-		cmd.MetaDB = cmd.MetaDB + ".d"
 	}
 
 	store, err := meta.NewRocksMeta("", cmd.MetaDB)
