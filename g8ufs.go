@@ -2,13 +2,13 @@ package g8ufs
 
 import (
 	"fmt"
-	"github.com/zero-os/0-fs/meta"
-	"github.com/zero-os/0-fs/rofs"
-	"github.com/zero-os/0-fs/storage"
 	"github.com/hanwen/go-fuse/fuse"
 	"github.com/hanwen/go-fuse/fuse/nodefs"
 	"github.com/hanwen/go-fuse/fuse/pathfs"
 	"github.com/op/go-logging"
+	"github.com/zero-os/0-fs/meta"
+	"github.com/zero-os/0-fs/rofs"
+	"github.com/zero-os/0-fs/storage"
 	"os"
 	"os/exec"
 	"path"
@@ -36,7 +36,8 @@ type Options struct {
 	Cache string
 	//Mount (required) is the mount point
 	Target string
-	//MetaStore (optional) will use meta.NewMemoryMeta if not provided
+	//MetaStore (optional), if not provided `Reset` flag will have no effect, and only the backend overlay
+	//will be mount at target, allows *full* backups of the backend to be mounted.
 	MetaStore meta.MetaStore
 	//Storage (required) storage to download files from
 	Storage storage.Storage
@@ -52,9 +53,6 @@ type G8ufs struct {
 
 //Mount mounts fuse with given options, it blocks forever until unmount is called on the given mount point
 func Mount(opt *Options) (*G8ufs, error) {
-	if opt.MetaStore == nil {
-		return nil, fmt.Errorf("missing meta store")
-	}
 	backend := opt.Backend
 	ro := path.Join(backend, "ro") //ro lower layer provided by fuse
 	rw := path.Join(backend, "rw") //rw upper layer on filyestem
@@ -69,34 +67,37 @@ func Mount(opt *Options) (*G8ufs, error) {
 	}
 
 	for _, name := range toSetup {
-		if opt.Reset {
+		if opt.MetaStore != nil && opt.Reset {
 			os.RemoveAll(name)
 		}
 		os.MkdirAll(name, 0755)
 	}
 
-	fs := rofs.New(opt.Storage, opt.MetaStore, ca)
+	var server *fuse.Server
+	if opt.MetaStore != nil {
+		fs := rofs.New(opt.Storage, opt.MetaStore, ca)
+		var err error
+		server, err = fuse.NewServer(
+			nodefs.NewFileSystemConnector(
+				pathfs.NewPathNodeFs(fs, nil).Root(),
+				nil,
+			).RawFS(), ro, &fuse.MountOptions{
+				AllowOther: true,
+				Options:    []string{"ro"},
+			})
 
-	server, err := fuse.NewServer(
-		nodefs.NewFileSystemConnector(
-			pathfs.NewPathNodeFs(fs, nil).Root(),
-			nil,
-		).RawFS(), ro, &fuse.MountOptions{
-			AllowOther: true,
-			Options:    []string{"ro"},
-		})
+		if err != nil {
+			return nil, err
+		}
 
-	if err != nil {
-		return nil, err
+		go server.Serve()
+		log.Debugf("Waiting for fuse mount")
+		server.WaitMount()
 	}
-
-	go server.Serve()
-	log.Debugf("Waiting for fuse mount")
-	server.WaitMount()
 
 	log.Debugf("Fuse mount is complete")
 
-	err = syscall.Mount("overlay",
+	err := syscall.Mount("overlay",
 		opt.Target,
 		"overlay",
 		syscall.MS_NOATIME,
@@ -107,7 +108,9 @@ func Mount(opt *Options) (*G8ufs, error) {
 	)
 
 	if err != nil {
-		server.Unmount()
+		if server != nil {
+			server.Unmount()
+		}
 		return nil, err
 	}
 
@@ -125,7 +128,9 @@ func Mount(opt *Options) (*G8ufs, error) {
 	}
 
 	if !success {
-		server.Unmount()
+		if server != nil {
+			server.Unmount()
+		}
 		return nil, fmt.Errorf("failed to start mount")
 	}
 

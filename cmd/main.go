@@ -28,14 +28,7 @@ type Cmd struct {
 }
 
 func (c *Cmd) Validate() []error {
-	var errors []error
-	if c.MetaDB == "" {
-		errors = append(errors,
-			fmt.Errorf("meta is required"),
-		)
-	}
-
-	return errors
+	return nil
 }
 
 func mount(cmd *Cmd, target string) error {
@@ -46,27 +39,32 @@ func mount(cmd *Cmd, target string) error {
 
 	// Test if the meta path is a directory
 	// if not, it's maybe a flist/tar.gz
-	f, err := os.Open(cmd.MetaDB)
-	if err != nil {
-		return err
-	}
-	info, err := f.Stat()
-	if err != nil {
-		return err
-	}
-	if !info.IsDir() {
-		err = unpack(f, cmd.MetaDB+".d")
+
+	var store meta.MetaStore
+	if len(cmd.MetaDB) != 0 {
+		f, err := os.Open(cmd.MetaDB)
 		if err != nil {
-			log.Error(err)
-		} else {
-			cmd.MetaDB = cmd.MetaDB + ".d"
+			return err
+		}
+		info, err := f.Stat()
+		if err != nil {
+			return err
+		}
+		if !info.IsDir() {
+			err = unpack(f, cmd.MetaDB+".d")
+			if err != nil {
+				log.Error(err)
+			} else {
+				cmd.MetaDB = cmd.MetaDB + ".d"
+			}
+		}
+
+		store, err = meta.NewRocksMeta("", cmd.MetaDB)
+		if err != nil {
+			return fmt.Errorf("failed to initialize meta store: %s", err)
 		}
 	}
 
-	store, err := meta.NewRocksMeta("", cmd.MetaDB)
-	if err != nil {
-		return fmt.Errorf("failed to initialize meta store: %s", err)
-	}
 	aydo, err := storage.NewARDBStorage(u)
 	if err != nil {
 		return err
@@ -140,7 +138,7 @@ func main() {
 	var version bool
 	flag.BoolVar(&version, "version", false, "Print version and exit")
 	flag.BoolVar(&cmd.Reset, "reset", false, "Reset filesystem on mount")
-	flag.StringVar(&cmd.MetaDB, "meta", "", "Path to metadata database (rocksdb)")
+	flag.StringVar(&cmd.MetaDB, "meta", "", "Path to metadata database (optional)")
 	flag.StringVar(&cmd.Backend, "backend", "/tmp/backend", "Working directory of the filesystem (cache and others)")
 	flag.StringVar(&cmd.Cache, "cache", "", "Optional external (common) cache directory, if not provided a temporary cache location will be created under `backend`")
 	flag.StringVar(&cmd.URL, "storage-url", "ardb://hub.gig.tech:16379", "Storage url")
