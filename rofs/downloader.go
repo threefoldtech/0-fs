@@ -3,10 +3,10 @@ package rofs
 import (
 	"context"
 	"fmt"
-	"github.com/zero-os/0-fs/meta"
-	"github.com/zero-os/0-fs/storage"
 	"github.com/golang/snappy"
 	"github.com/xxtea/xxtea-go/xxtea"
+	"github.com/zero-os/0-fs/meta"
+	"github.com/zero-os/0-fs/storage"
 	"io/ioutil"
 	"math"
 	"os"
@@ -55,6 +55,12 @@ func (d *Downloader) DownloadBlock(block meta.BlockInfo) ([]byte, error) {
 }
 
 func (d *Downloader) worker(ctx context.Context, feed <-chan *DownloadBlock, out chan<- *OutputBlock) {
+	defer func() {
+		if err := recover(); err != nil {
+			log.Warningf("cancel block download: %s", err)
+		}
+	}()
+
 	for {
 		select {
 		case blk := <-feed:
