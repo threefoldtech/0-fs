@@ -1,10 +1,7 @@
 {
-	"ImportPath": "github.com/g8os/g8ufs",
+	"ImportPath": "github.com/zero-os/0-fs",
 	"GoVersion": "go1.8",
 	"GodepVersion": "v79",
-	"Packages": [
-		"./..."
-	],
 	"Deps": [
 		{
 			"ImportPath": "github.com/cockroachdb/c-jemalloc",
@@ -78,6 +75,10 @@
 		{
 			"ImportPath": "golang.org/x/net/context",
 			"Rev": "236b8f043b920452504e263bc21d354427127473"
+		},
+		{
+			"ImportPath": "golang.org/x/sync/errgroup",
+			"Rev": "fd80eb99c8f653c847d294a001bdf2a3a6f768f5"
 		},
 		{
 			"ImportPath": "zombiezen.com/go/capnproto2",

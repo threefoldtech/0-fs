@@ -3,14 +3,16 @@ package rofs
 import (
 	"context"
 	"fmt"
+	"io/ioutil"
+	"math"
+	"os"
+
 	"github.com/golang/snappy"
 	"github.com/xxtea/xxtea-go/xxtea"
 	"github.com/zero-os/0-fs/meta"
 	"github.com/zero-os/0-fs/storage"
-	"io/ioutil"
-	"math"
-	"os"
-	"sync"
+
+	"golang.org/x/sync/errgroup"
 )
 
 const (
@@ -54,48 +56,45 @@ func (d *Downloader) DownloadBlock(block meta.BlockInfo) ([]byte, error) {
 	return snappy.Decode(nil, data)
 }
 
-func (d *Downloader) worker(ctx context.Context, feed <-chan *DownloadBlock, out chan<- *OutputBlock) {
-	defer func() {
-		if err := recover(); err != nil {
-			log.Warningf("cancel block download: %s", err)
+func (d *Downloader) worker(ctx context.Context, feed <-chan *DownloadBlock, out chan<- *OutputBlock) error {
+	for blk := range feed {
+		raw, err := d.DownloadBlock(blk.BlockInfo)
+		result := &OutputBlock{
+			Index: blk.Index,
+			Raw:   raw,
 		}
-	}()
-
-	for {
+		if err != nil {
+			log.Errorf("downloading block %d error: %s", blk.Index+1, err)
+			result.Err = err
+		}
 		select {
-		case blk := <-feed:
-			if blk == nil {
-				return
-			}
-			raw, err := d.DownloadBlock(blk.BlockInfo)
-			result := &OutputBlock{
-				Index: blk.Index,
-				Raw:   raw,
-			}
-			if err != nil {
-				log.Errorf("downloading block %d error: %s", blk.Index+1, err)
-				result.Err = err
-			}
-			out <- result
+		case out <- result:
 		case <-ctx.Done():
-			return
+			return nil
 		}
 	}
+	return nil
 }
-func (d *Downloader) writer(output *os.File, expecting int, results <-chan *OutputBlock) error {
-	for i := 0; i < expecting; i++ {
-		result := <-results
+
+func (d *Downloader) writer(ctx context.Context, output *os.File, results <-chan *OutputBlock) error {
+
+	for result := range results {
 		log.Debugf("writing result of block %d", result.Index+1)
 		if result.Err != nil {
 			return result.Err
 		}
 
-		if _, err := output.Seek(int64(result.Index)*int64(d.BlockSize), os.SEEK_SET); err != nil {
-			return err
-		}
+		select {
+		default:
+			if _, err := output.Seek(int64(result.Index)*int64(d.BlockSize), os.SEEK_SET); err != nil {
+				return err
+			}
 
-		if _, err := output.Write(result.Raw); err != nil {
-			return err
+			if _, err := output.Write(result.Raw); err != nil {
+				return err
+			}
+		case <-ctx.Done():
+			return nil
 		}
 	}
 	return nil
@@ -115,31 +114,29 @@ func (d *Downloader) Download(output *os.File) error {
 		workers = int(math.Min(float64(DefaultDownloadWorkers), float64(len(d.Blocks))))
 	}
 
-	ctx, cancel := context.WithCancel(context.Background())
+	group, ctx := errgroup.WithContext(context.Background())
+	downloaderGroup, _ := errgroup.WithContext(ctx)
 
 	feed := make(chan *DownloadBlock)
 	results := make(chan *OutputBlock)
 
-	defer close(feed)
-	defer close(results)
-	defer cancel()
-
 	//start workers.
 	for i := 1; i <= workers; i++ {
-		go d.worker(ctx, feed, results)
+		downloaderGroup.Go(func() error {
+			return d.worker(ctx, feed, results)
+		})
 	}
 
-	//consume all outputs.
-	var err error
-	wg := sync.WaitGroup{}
-	wg.Add(1)
-	go func() {
-		if err = d.writer(output, len(d.Blocks), results); err != nil {
-			cancel()
-		}
+	group.Go(func() error {
+		err := downloaderGroup.Wait()
+		close(results)
+		return err
+	})
 
-		wg.Done()
-	}()
+	//consume all outputs.
+	group.Go(func() error {
+		return d.writer(ctx, output, results)
+	})
 
 	for i, block := range d.Blocks {
 		downloadBlock := &DownloadBlock{
@@ -152,7 +149,7 @@ func (d *Downloader) Download(output *os.File) error {
 			return ctx.Err()
 		}
 	}
+	close(feed)
 
-	wg.Wait()
-	return err
+	return group.Wait()
 }
