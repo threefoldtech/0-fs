@@ -1,3 +1,7 @@
+// Copyright 2016 the Go-FUSE Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+
 package nodefs
 
 import (
@@ -48,6 +52,12 @@ func (f *lockingFile) Flush() fuse.Status {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	return f.file.Flush()
+}
+
+func (f *lockingFile) Flock(flags int) fuse.Status {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	return f.file.Flock(flags)
 }
 
 func (f *lockingFile) Release() {

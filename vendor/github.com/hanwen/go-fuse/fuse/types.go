@@ -1,10 +1,12 @@
+// Copyright 2016 the Go-FUSE Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+
 package fuse
 
 import (
 	"syscall"
 )
-
-const PAGESIZE = 4096
 
 const (
 	_DEFAULT_BACKGROUND_TASKS = 12
@@ -14,21 +16,52 @@ const (
 type Status int32
 
 const (
-	OK      = Status(0)
-	EACCES  = Status(syscall.EACCES)
-	EBUSY   = Status(syscall.EBUSY)
-	EINVAL  = Status(syscall.EINVAL)
-	EIO     = Status(syscall.EIO)
-	ENOENT  = Status(syscall.ENOENT)
-	ENOSYS  = Status(syscall.ENOSYS)
+	OK = Status(0)
+
+	// EACCESS Permission denied
+	EACCES = Status(syscall.EACCES)
+
+	// EBUSY Device or resource busy
+	EBUSY = Status(syscall.EBUSY)
+
+	// EAGAIN Resource temporarily unavailable
+	EAGAIN = Status(syscall.EAGAIN)
+
+	// EINVAL Invalid argument
+	EINVAL = Status(syscall.EINVAL)
+
+	// EIO I/O error
+	EIO = Status(syscall.EIO)
+
+	// ENOENT No such file or directory
+	ENOENT = Status(syscall.ENOENT)
+
+	// ENOSYS Function not implemented
+	ENOSYS = Status(syscall.ENOSYS)
+
+	// ENODATA No data available
 	ENODATA = Status(syscall.ENODATA)
+
+	// ENOTDIR Not a directory
 	ENOTDIR = Status(syscall.ENOTDIR)
-	EPERM   = Status(syscall.EPERM)
-	ERANGE  = Status(syscall.ERANGE)
-	EXDEV   = Status(syscall.EXDEV)
-	EBADF   = Status(syscall.EBADF)
-	ENODEV  = Status(syscall.ENODEV)
-	EROFS   = Status(syscall.EROFS)
+
+	// EPERM Operation not permitted
+	EPERM = Status(syscall.EPERM)
+
+	// ERANGE Math result not representable
+	ERANGE = Status(syscall.ERANGE)
+
+	// EXDEV Cross-device link
+	EXDEV = Status(syscall.EXDEV)
+
+	// EBADF Bad file number
+	EBADF = Status(syscall.EBADF)
+
+	// ENODEV No such device
+	ENODEV = Status(syscall.ENODEV)
+
+	// EROFS Read-only file system
+	EROFS = Status(syscall.EROFS)
 )
 
 type ForgetIn struct {
@@ -161,6 +194,9 @@ const (
 	CAP_ASYNC_DIO        = (1 << 15)
 	CAP_WRITEBACK_CACHE  = (1 << 16)
 	CAP_NO_OPEN_SUPPORT  = (1 << 17)
+	CAP_PARALLEL_DIROPS  = (1 << 18)
+	CAP_HANDLE_KILLPRIV  = (1 << 19)
+	CAP_POSIX_ACL        = (1 << 20)
 )
 
 type InitIn struct {
@@ -337,13 +373,14 @@ type NotifyInvalDeleteOut struct {
 }
 
 const (
-	NOTIFY_POLL         = -1
-	NOTIFY_INVAL_INODE  = -2
-	NOTIFY_INVAL_ENTRY  = -3
-	NOTIFY_STORE        = -4
-	NOTIFY_RETRIEVE     = -5
+	//	NOTIFY_POLL         = -1
+	NOTIFY_INVAL_INODE = -2
+	NOTIFY_INVAL_ENTRY = -3
+	//	NOTIFY_STORE        = -4
+	//	NOTIFY_RETRIEVE     = -5
 	NOTIFY_INVAL_DELETE = -6
-	NOTIFY_CODE_MAX     = -6
+
+//	NOTIFY_CODE_MAX     = -6
 )
 
 type FlushIn struct {
@@ -428,4 +465,9 @@ type FallocateIn struct {
 	Length  uint64
 	Mode    uint32
 	Padding uint32
+}
+
+type FlockIn struct {
+	InHeader
+	Fh uint64
 }

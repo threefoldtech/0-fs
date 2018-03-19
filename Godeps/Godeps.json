@@ -1,35 +1,24 @@
 {
 	"ImportPath": "github.com/zero-os/0-fs",
-	"GoVersion": "go1.8",
+	"GoVersion": "go1.9",
 	"GodepVersion": "v79",
+	"Packages": [
+		"./..."
+	],
 	"Deps": [
-		{
-			"ImportPath": "github.com/cockroachdb/c-jemalloc",
-			"Rev": "7eb7980d8a9f68b771568a7eb15196a63a818595"
-		},
-		{
-			"ImportPath": "github.com/cockroachdb/c-lz4",
-			"Rev": "834d3303c9e84b1045bc57c3eb3723ee8cb4d33b"
-		},
-		{
-			"ImportPath": "github.com/cockroachdb/c-rocksdb",
-			"Rev": "608bf6179ca8b317e707394d263059a933808e2f"
-		},
-		{
-			"ImportPath": "github.com/cockroachdb/c-snappy",
-			"Rev": "c0cd3c9ce92f195001595e1fbbe66f045daad34f"
-		},
 		{
 			"ImportPath": "github.com/codahale/blake2",
 			"Rev": "8d10d0420cbfbdc9c1164c0c4ad3457a6c3771b9"
 		},
 		{
 			"ImportPath": "github.com/garyburd/redigo/internal",
-			"Rev": "836b6e58b3358112c8291565d01c35b8764070d7"
+			"Comment": "v1.6.0-1-ga7327d8",
+			"Rev": "a7327d8ced8067e916e7e35490522fd0182fa839"
 		},
 		{
 			"ImportPath": "github.com/garyburd/redigo/redis",
-			"Rev": "836b6e58b3358112c8291565d01c35b8764070d7"
+			"Comment": "v1.6.0-1-ga7327d8",
+			"Rev": "a7327d8ced8067e916e7e35490522fd0182fa839"
 		},
 		{
 			"ImportPath": "github.com/glycerine/rbtree",
@@ -41,19 +30,23 @@
 		},
 		{
 			"ImportPath": "github.com/hanwen/go-fuse/fuse",
-			"Rev": "ed841342e5daf4711f24106b93c1035864a8914b"
+			"Comment": "v20170619-31-ga9ddcb8",
+			"Rev": "a9ddcb8a4b609500fc59c89ccc9ee05f00a5fefd"
 		},
 		{
 			"ImportPath": "github.com/hanwen/go-fuse/fuse/nodefs",
-			"Rev": "ed841342e5daf4711f24106b93c1035864a8914b"
+			"Comment": "v20170619-31-ga9ddcb8",
+			"Rev": "a9ddcb8a4b609500fc59c89ccc9ee05f00a5fefd"
 		},
 		{
 			"ImportPath": "github.com/hanwen/go-fuse/fuse/pathfs",
-			"Rev": "ed841342e5daf4711f24106b93c1035864a8914b"
+			"Comment": "v20170619-31-ga9ddcb8",
+			"Rev": "a9ddcb8a4b609500fc59c89ccc9ee05f00a5fefd"
 		},
 		{
 			"ImportPath": "github.com/hanwen/go-fuse/splice",
-			"Rev": "ed841342e5daf4711f24106b93c1035864a8914b"
+			"Comment": "v20170619-31-ga9ddcb8",
+			"Rev": "a9ddcb8a4b609500fc59c89ccc9ee05f00a5fefd"
 		},
 		{
 			"ImportPath": "github.com/op/go-logging",
@@ -62,11 +55,12 @@
 		},
 		{
 			"ImportPath": "github.com/patrickmn/go-cache",
-			"Rev": "1881a9bccb818787f68c52bfba648c6cf34c34fa"
+			"Comment": "v2.1.0",
+			"Rev": "a3647f8e31d79543b2d0f0ae2fe5c379d72cedc0"
 		},
 		{
 			"ImportPath": "github.com/tecbot/gorocksdb",
-			"Rev": "b5e241f52bbe85991d373653545de2fb843398b5"
+			"Rev": "b9cb0d30eca790f5bcf524dd3beb715d6c8d1923"
 		},
 		{
 			"ImportPath": "github.com/xxtea/xxtea-go/xxtea",
@@ -74,11 +68,11 @@
 		},
 		{
 			"ImportPath": "golang.org/x/net/context",
-			"Rev": "236b8f043b920452504e263bc21d354427127473"
+			"Rev": "434ec0c7fe3742c984919a691b2018a6e9694425"
 		},
 		{
-			"ImportPath": "golang.org/x/sync/errgroup",
-			"Rev": "fd80eb99c8f653c847d294a001bdf2a3a6f768f5"
+			"ImportPath": "golang.org/x/sys/unix",
+			"Rev": "f3918c30c5c2cb527c0b071a27c35120a6c0719a"
 		},
 		{
 			"ImportPath": "zombiezen.com/go/capnproto2",

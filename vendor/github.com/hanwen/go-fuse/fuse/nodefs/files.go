@@ -1,3 +1,7 @@
+// Copyright 2016 the Go-FUSE Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+
 package nodefs
 
 import (
@@ -158,6 +162,14 @@ func (f *loopbackFile) Flush() fuse.Status {
 func (f *loopbackFile) Fsync(flags int) (code fuse.Status) {
 	f.lock.Lock()
 	r := fuse.ToStatus(syscall.Fsync(int(f.File.Fd())))
+	f.lock.Unlock()
+
+	return r
+}
+
+func (f *loopbackFile) Flock(flags int) fuse.Status {
+	f.lock.Lock()
+	r := fuse.ToStatus(syscall.Flock(int(f.File.Fd()), flags))
 	f.lock.Unlock()
 
 	return r

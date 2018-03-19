@@ -1,3 +1,7 @@
+// Copyright 2016 the Go-FUSE Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+
 package fuse
 
 import (
@@ -42,6 +46,9 @@ func init() {
 		CAP_ASYNC_DIO:        "ASYNC_DIO",
 		CAP_WRITEBACK_CACHE:  "WRITEBACK_CACHE",
 		CAP_NO_OPEN_SUPPORT:  "NO_OPEN_SUPPORT",
+		CAP_PARALLEL_DIROPS:  "CAP_PARALLEL_DIROPS",
+		CAP_HANDLE_KILLPRIV:  "CAP_PARALLEL_DIROPS",
+		CAP_POSIX_ACL:        "CAP_POSIX_ACL",
 	}
 	releaseFlagNames = map[int64]string{
 		RELEASE_FLUSH: "FLUSH",

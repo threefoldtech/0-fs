@@ -1,3 +1,7 @@
+// Copyright 2016 the Go-FUSE Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+
 package fuse
 
 import (
@@ -238,6 +242,15 @@ func (fs *wrappingFS) Read(input *ReadIn, buf []byte) (ReadResult, Status) {
 		return s.Read(input, buf)
 	}
 	return nil, ENOSYS
+}
+
+func (fs *wrappingFS) Flock(input *FlockIn, flags int) Status {
+	if s, ok := fs.fs.(interface {
+		Flock(input *FlockIn, flags int) Status
+	}); ok {
+		return s.Flock(input, flags)
+	}
+	return ENOSYS
 }
 
 func (fs *wrappingFS) Release(input *ReleaseIn) {

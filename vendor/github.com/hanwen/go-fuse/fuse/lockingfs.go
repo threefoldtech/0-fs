@@ -1,3 +1,7 @@
+// Copyright 2016 the Go-FUSE Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+
 package fuse
 
 import (
@@ -153,6 +157,11 @@ func (fs *lockingRawFileSystem) ReleaseDir(input *ReleaseIn) {
 func (fs *lockingRawFileSystem) Read(input *ReadIn, buf []byte) (ReadResult, Status) {
 	defer fs.locked()()
 	return fs.RawFS.Read(input, buf)
+}
+
+func (fs *lockingRawFileSystem) Flock(input *FlockIn, flags int) Status {
+	defer fs.locked()()
+	return fs.RawFS.Flock(input, flags)
 }
 
 func (fs *lockingRawFileSystem) Write(input *WriteIn, data []byte) (written uint32, code Status) {

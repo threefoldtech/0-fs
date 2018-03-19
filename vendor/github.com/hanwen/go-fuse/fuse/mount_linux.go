@@ -1,3 +1,7 @@
+// Copyright 2016 the Go-FUSE Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+
 package fuse
 
 import (
@@ -6,7 +10,7 @@ import (
 	"os"
 	"os/exec"
 	"path"
-	"path/filepath"
+	"strings"
 	"syscall"
 	"unsafe"
 )
@@ -24,7 +28,7 @@ func unixgramSocketpair() (l, r *os.File, err error) {
 
 // Create a FUSE FS on the specified mount point.  The returned
 // mount point is always absolute.
-func mount(mountPoint string, options string) (fd int, err error) {
+func mount(mountPoint string, opts *MountOptions, ready chan<- error) (fd int, err error) {
 	local, remote, err := unixgramSocketpair()
 	if err != nil {
 		return
@@ -39,9 +43,8 @@ func mount(mountPoint string, options string) (fd int, err error) {
 	}
 
 	cmd := []string{bin, mountPoint}
-	if options != "" {
-		cmd = append(cmd, "-o")
-		cmd = append(cmd, options)
+	if s := opts.optionsStrings(); len(s) > 0 {
+		cmd = append(cmd, "-o", strings.Join(s, ","))
 	}
 	proc, err := os.StartProcess(bin,
 		cmd,
@@ -62,32 +65,23 @@ func mount(mountPoint string, options string) (fd int, err error) {
 		return
 	}
 
-	return getConnection(local)
-}
-
-func privilegedUnmount(mountPoint string) error {
-	dir, _ := filepath.Split(mountPoint)
-	bin, err := umountBinary()
+	fd, err = getConnection(local)
 	if err != nil {
-		return err
+		return -1, err
 	}
 
-	proc, err := os.StartProcess(bin,
-		[]string{bin, mountPoint},
-		&os.ProcAttr{Dir: dir, Files: []*os.File{nil, nil, os.Stderr}})
-	if err != nil {
-		return err
-	}
-	w, err := proc.Wait()
-	if !w.Success() {
-		return fmt.Errorf("umount exited with code %v\n", w.Sys())
-	}
-	return err
+	// golang sets CLOEXEC on file descriptors when they are
+	// acquired through normal operations (e.g. open).
+	// Buf for fd, we have to set CLOEXEC manually
+	syscall.CloseOnExec(fd)
+
+	close(ready)
+	return fd, err
 }
 
 func unmount(mountPoint string) (err error) {
 	if os.Geteuid() == 0 {
-		return privilegedUnmount(mountPoint)
+		return syscall.Unmount(mountPoint, 0)
 	}
 	bin, err := fusermountBinary()
 	if err != nil {

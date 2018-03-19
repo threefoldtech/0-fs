@@ -1,3 +1,7 @@
+// Copyright 2016 the Go-FUSE Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+
 // The nodefs package offers a high level API that resembles the
 // kernel's idea of what an FS looks like.  File systems can have
 // multiple hard-links to one file, for example. It is also suited if
@@ -37,14 +41,20 @@ type Node interface {
 	// for directory Nodes.
 	Lookup(out *fuse.Attr, name string, context *fuse.Context) (*Inode, fuse.Status)
 
-	// Deletable() should return true if this inode may be
-	// discarded from the children list. This will be called from
-	// within the treeLock critical section, so you cannot look at
-	// other inodes.
+	// Deletable() should return true if this node may be discarded once
+	// the kernel forgets its reference.
+	// If it returns false, OnForget will never get called for this node. This
+	// is appropriate if the filesystem has no persistent backing store
+	// (in-memory filesystems) where discarding the node loses the stored data.
+	// Deletable will be called from within the treeLock critical section, so you
+	// cannot look at other nodes.
 	Deletable() bool
 
-	// OnForget is called when the reference to this inode is
-	// dropped from the tree.
+	// OnForget is called when the kernel forgets its reference to this node and
+	// sends a FORGET request. It should perform cleanup and free memory as
+	// appropriate for the filesystem.
+	// OnForget is not called if the node is a directory and has children.
+	// This is called from within a treeLock critical section.
 	OnForget()
 
 	// Misc.
@@ -120,6 +130,8 @@ type File interface {
 	Read(dest []byte, off int64) (fuse.ReadResult, fuse.Status)
 	Write(data []byte, off int64) (written uint32, code fuse.Status)
 
+	Flock(flags int) fuse.Status
+
 	// Flush is called for close() call on a file descriptor. In
 	// case of duplicated descriptor, it may be called more than
 	// once for a file.
@@ -166,10 +178,13 @@ type Options struct {
 	NegativeTimeout time.Duration
 
 	// If set, replace all uids with given UID.
-	// NewFileSystemOptions() will set this to the daemon's
+	// NewOptions() will set this to the daemon's
 	// uid/gid.
 	*fuse.Owner
 
 	// This option exists for compatibility and is ignored.
 	PortableInodes bool
+
+	// If set, print debug information.
+	Debug bool
 }
