@@ -2,6 +2,12 @@ package g8ufs
 
 import (
 	"fmt"
+	"os"
+	"os/exec"
+	"path"
+	"syscall"
+	"time"
+
 	"github.com/hanwen/go-fuse/fuse"
 	"github.com/hanwen/go-fuse/fuse/nodefs"
 	"github.com/hanwen/go-fuse/fuse/pathfs"
@@ -9,11 +15,6 @@ import (
 	"github.com/zero-os/0-fs/meta"
 	"github.com/zero-os/0-fs/rofs"
 	"github.com/zero-os/0-fs/storage"
-	"os"
-	"os/exec"
-	"path"
-	"syscall"
-	"time"
 )
 
 var (
@@ -147,11 +148,7 @@ func (fs *G8ufs) Wait() error {
 		fs.umountFuse()
 	}()
 
-	for {
-		cmd := exec.Command("mountpoint", "-q", fs.target)
-		if err := cmd.Run(); err != nil {
-			return nil
-		}
+	for IsMount(fs.target) {
 		<-time.After(1 * time.Second)
 	}
 
@@ -184,4 +181,15 @@ func (fs *G8ufs) Unmount() error {
 	}
 
 	return errs
+}
+
+//IsMount checks if path is a mounpoint
+func IsMount(path string) bool {
+	//TODO: use a better approach to check if a mount point
+	cmd := exec.Command("mountpoint", "-q", path)
+	if err := cmd.Run(); err != nil {
+		return false
+	}
+
+	return true
 }
