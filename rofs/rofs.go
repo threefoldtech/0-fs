@@ -3,7 +3,6 @@ package rofs
 import (
 	"fmt"
 	"math"
-	"time"
 
 	"github.com/hanwen/go-fuse/fuse"
 	"github.com/hanwen/go-fuse/fuse/nodefs"
@@ -18,8 +17,7 @@ const (
 )
 
 var (
-	log   = logging.MustGetLogger("rofs")
-	atime = uint64(time.Now().Unix())
+	log = logging.MustGetLogger("rofs")
 )
 
 type filesystem struct {
@@ -70,9 +68,9 @@ func (fs *filesystem) GetAttr(name string, context *fuse.Context) (*fuse.Attr, f
 
 	return &fuse.Attr{
 		Size:   size,
-		Atime:  atime,
+		Atime:  uint64(info.ModificationTime),
 		Mtime:  uint64(info.ModificationTime),
-		Ctime:  uint64(info.ModificationTime),
+		Ctime:  uint64(info.CreationTime),
 		Mode:   nodeType | access.Mode,
 		Blocks: blocks,
 		Owner: fuse.Owner{
