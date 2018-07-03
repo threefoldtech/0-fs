@@ -4,10 +4,6 @@ import (
 	"bytes"
 	"crypto/md5"
 	"fmt"
-	"github.com/codahale/blake2"
-	"github.com/zero-os/0-fs/cap.np"
-	"github.com/patrickmn/go-cache"
-	rocksdb "github.com/tecbot/gorocksdb"
 	"io"
 	"os"
 	"os/user"
@@ -15,6 +11,11 @@ import (
 	"strconv"
 	"sync"
 	"time"
+
+	"github.com/codahale/blake2"
+	"github.com/patrickmn/go-cache"
+	rocksdb "github.com/tecbot/gorocksdb"
+	"github.com/zero-os/0-fs/cap.np"
 	"zombiezen.com/go/capnproto2"
 )
 

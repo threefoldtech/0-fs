@@ -84,6 +84,9 @@ func (p Struct) IsValid() bool {
 }
 
 // Address returns the address the pointer references.
+//
+// Deprecated: The return value is not well-defined.  Use SamePtr if you
+// need to check whether two pointers refer to the same object.
 func (p Struct) Address() Address {
 	return p.off
 }
@@ -105,12 +108,6 @@ func (p Struct) readSize() Size {
 		return 0
 	}
 	return p.size.totalSize()
-}
-
-// value returns a raw struct pointer.
-func (p Struct) value(paddr Address) rawPointer {
-	off := makePointerOffset(paddr, p.off)
-	return rawStructPointer(off, p.size)
 }
 
 func (p Struct) underlying() Pointer {
@@ -145,7 +142,7 @@ func (p Struct) SetPtr(i uint16, src Ptr) error {
 	if p.seg == nil || i >= p.size.PointerCount {
 		panic(errOutOfBounds)
 	}
-	return p.seg.writePtr(copyContext{}, p.pointerAddress(i), src)
+	return p.seg.writePtr(p.pointerAddress(i), src, false)
 }
 
 // SetText sets the i'th pointer to a newly allocated text or null if v is empty.
@@ -313,7 +310,7 @@ const (
 )
 
 // copyStruct makes a deep copy of src into dst.
-func copyStruct(cc copyContext, dst, src Struct) error {
+func copyStruct(dst, src Struct) error {
 	if dst.seg == nil {
 		return nil
 	}
@@ -350,11 +347,11 @@ func copyStruct(cc copyContext, dst, src Struct) error {
 	for j := uint16(0); j < numSrcPtrs && j < numDstPtrs; j++ {
 		srcAddr, _ := srcPtrSect.element(int32(j), wordSize)
 		dstAddr, _ := dstPtrSect.element(int32(j), wordSize)
-		m, err := src.seg.readPtr(srcAddr, maxDepth) // copy already handles depth-limiting
+		m, err := src.seg.readPtr(srcAddr, src.depthLimit)
 		if err != nil {
 			return err
 		}
-		err = dst.seg.writePtr(cc.incDepth(), dstAddr, m)
+		err = dst.seg.writePtr(dstAddr, m, true)
 		if err != nil {
 			return err
 		}
