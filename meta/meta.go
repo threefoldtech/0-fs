@@ -2,12 +2,15 @@ package meta
 
 import (
 	"fmt"
-	"github.com/op/go-logging"
 	"syscall"
+
+	"github.com/op/go-logging"
 )
 
 var (
-	log         = logging.MustGetLogger("meta")
+	log = logging.MustGetLogger("meta")
+
+	//ErrNotFound in case of an entry miss
 	ErrNotFound = fmt.Errorf("not found")
 )
 

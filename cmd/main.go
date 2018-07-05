@@ -59,7 +59,7 @@ func mount(cmd *Cmd, target string) error {
 			}
 		}
 
-		store, err = meta.NewRocksMeta("", cmd.MetaDB)
+		store, err = meta.NewRocksStore("", cmd.MetaDB)
 		if err != nil {
 			return fmt.Errorf("failed to initialize meta store: %s", err)
 		}
