@@ -2,6 +2,7 @@ package meta
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -24,6 +25,8 @@ var (
 		UID:  1000,
 		GID:  1000,
 	}
+
+	errNoACI = errors.New("no ACI attached with this object")
 )
 
 const (
@@ -77,6 +80,11 @@ func (s *rocksStore) getACI(key string) (*np.ACI, error) {
 	if err != nil {
 		log.Debugf("failed to get slice for aci %s: %s", key, err)
 		return nil, err
+	}
+
+	if slice.Size() == 0 {
+		// no ACI attached with the object
+		return nil, errNoACI
 	}
 
 	msg, err := capnp.NewDecoder(bytes.NewBuffer(slice.Data())).Decode()
@@ -168,7 +176,7 @@ func (s *rocksStore) getDirWithHash(hash string) (*Dir, error) {
 	}
 
 	access, err := s.getAccess(key)
-	if err != nil {
+	if err != nil && err != errNoACI {
 		log.Debugf("failed to get access from key %s: %s", key, err)
 		return nil, err
 	}
