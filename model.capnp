@@ -2,7 +2,7 @@
 
 using Go = import "/go.capnp";
 $Go.package("np");
-$Go.import("github.com/zero-os/0-fs/cap.np");
+$Go.import("github.com/theefoldtech/0-fs/cap.np");
 
 struct FileBlock {
     hash @0: Data;  # File hash stored as key on the backend

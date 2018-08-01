@@ -1,6 +1,6 @@
 package meta
 
-import np "github.com/zero-os/0-fs/cap.np"
+import np "github.com/threefoldtech/0-fs/cap.np"
 
 type Special struct {
 	np.Inode
