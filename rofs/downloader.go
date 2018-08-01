@@ -9,8 +9,8 @@ import (
 
 	"github.com/golang/snappy"
 	"github.com/xxtea/xxtea-go/xxtea"
-	"github.com/zero-os/0-fs/meta"
-	"github.com/zero-os/0-fs/storage"
+	"github.com/threefoldtech/0-fs/meta"
+	"github.com/threefoldtech/0-fs/storage"
 
 	"golang.org/x/sync/errgroup"
 )

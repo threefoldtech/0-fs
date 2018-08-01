@@ -14,7 +14,7 @@ import (
 	"github.com/codahale/blake2"
 	"github.com/patrickmn/go-cache"
 	rocksdb "github.com/tecbot/gorocksdb"
-	np "github.com/zero-os/0-fs/cap.np"
+	np "github.com/threefoldtech/0-fs/cap.np"
 	"zombiezen.com/go/capnproto2"
 )
 

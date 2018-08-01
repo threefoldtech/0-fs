@@ -8,8 +8,8 @@ import (
 	"github.com/hanwen/go-fuse/fuse/nodefs"
 	"github.com/hanwen/go-fuse/fuse/pathfs"
 	"github.com/op/go-logging"
-	"github.com/zero-os/0-fs/meta"
-	"github.com/zero-os/0-fs/storage"
+	"github.com/threefoldtech/0-fs/meta"
+	"github.com/threefoldtech/0-fs/storage"
 )
 
 const (

@@ -1,7 +1,7 @@
 package rofs
 
 import (
-	"github.com/zero-os/0-fs/meta"
+	"github.com/threefoldtech/0-fs/meta"
 	"os"
 	"path"
 	"syscall"

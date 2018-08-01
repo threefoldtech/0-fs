@@ -13,8 +13,8 @@ import (
 	"github.com/golang/snappy"
 	"github.com/stretchr/testify/assert"
 	"github.com/xxtea/xxtea-go/xxtea"
-	"github.com/zero-os/0-fs/meta"
-	"github.com/zero-os/0-fs/rofs"
+	"github.com/threefoldtech/0-fs/meta"
+	"github.com/threefoldtech/0-fs/rofs"
 )
 
 const (

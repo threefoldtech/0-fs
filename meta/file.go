@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"sync"
 
-	np "github.com/zero-os/0-fs/cap.np"
+	np "github.com/threefoldtech/0-fs/cap.np"
 )
 
 //File represents a file inode
