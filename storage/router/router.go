@@ -1,5 +1,14 @@
 package router
 
+import (
+	"bytes"
+	"fmt"
+	"io"
+	"io/ioutil"
+
+	"github.com/pkg/errors"
+)
+
 /*
 Router defines a router engine. The router will try the pools in the same
 order defined by the table. And write to cache if wasn't retrieved from the
@@ -29,11 +38,11 @@ func (r *Router) get(key string) (string, []byte, error) {
 		return poolName, data, err
 	}
 
-	return "", nil, ErrNotRoutable
+	return "", nil, errors.Wrap(ErrNotRoutable, "no pools matches key")
 }
 
 //Get gets key from table
-func (r *Router) Get(key string) ([]byte, error) {
+func (r *Router) Get(key string) (io.ReadCloser, error) {
 	_, data, err := r.get(key)
 	if err != nil {
 		return nil, err
@@ -41,5 +50,12 @@ func (r *Router) Get(key string) ([]byte, error) {
 
 	//TODO: replicate to cache
 
-	return data, nil
+	//TODO CRC check (gonna be dropped)
+	if len(data) <= 16 {
+		return nil, fmt.Errorf("wrong data size")
+	}
+
+	buf := bytes.NewBuffer(data[16:])
+
+	return ioutil.NopCloser(buf), nil
 }

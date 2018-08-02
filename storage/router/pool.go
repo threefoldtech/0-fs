@@ -83,6 +83,9 @@ func (p *ScanPool) getPool(d Destination) (*redis.Pool, error) {
 	}
 
 	pool = p.newPool(d)
+	if p.conn == nil {
+		p.conn = make(map[Destination]*redis.Pool)
+	}
 	p.conn[d] = pool
 
 	return pool, nil

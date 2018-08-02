@@ -32,12 +32,12 @@ func TestNewRage(t *testing.T) {
 }
 
 func TestRangeExact(t *testing.T) {
-	r, err := router.NewRange("00")
+	r, err := router.NewRange("1C")
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	if ok := assert.True(t, r.In("00ABC")); !ok {
+	if ok := assert.True(t, r.In("1cabc")); !ok {
 		t.Error()
 	}
 
@@ -51,7 +51,7 @@ func TestRangeExact(t *testing.T) {
 }
 
 func TestRange(t *testing.T) {
-	r, err := router.NewRange("01:11")
+	r, err := router.NewRange("01:c1")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -68,11 +68,11 @@ func TestRange(t *testing.T) {
 		t.Error()
 	}
 
-	if ok := assert.True(t, r.In("10")); !ok {
+	if ok := assert.True(t, r.In("ba39055da55fb79da29f23848d3120b220f543dedd9081d0bdf463928eef7491")); !ok {
 		t.Error()
 	}
 
-	if ok := assert.False(t, r.In("12")); !ok {
+	if ok := assert.False(t, r.In("c2123")); !ok {
 		t.Error()
 	}
 

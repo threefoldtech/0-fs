@@ -6,7 +6,6 @@ import (
 	"flag"
 	"fmt"
 	"io"
-	"net/url"
 	"os"
 	"path"
 
@@ -32,15 +31,10 @@ func (c *Cmd) Validate() []error {
 }
 
 func mount(cmd *Cmd, target string) error {
-	u, err := url.Parse(cmd.URL)
-	if err != nil {
-		return err
-	}
-
 	// Test if the meta path is a directory
 	// if not, it's maybe a flist/tar.gz
 
-	var store meta.MetaStore
+	var metaStore meta.MetaStore
 	if len(cmd.MetaDB) != 0 {
 		f, err := os.Open(cmd.MetaDB)
 		if err != nil {
@@ -59,23 +53,23 @@ func mount(cmd *Cmd, target string) error {
 			}
 		}
 
-		store, err = meta.NewRocksStore("", cmd.MetaDB)
+		metaStore, err = meta.NewRocksStore("", cmd.MetaDB)
 		if err != nil {
 			return fmt.Errorf("failed to initialize meta store: %s", err)
 		}
 	}
 
-	aydo, err := storage.NewARDBStorage(u)
+	store, err := storage.NewSimpleStorage(cmd.URL)
 	if err != nil {
 		return err
 	}
 
 	fs, err := g8ufs.Mount(&g8ufs.Options{
-		MetaStore: store,
+		MetaStore: metaStore,
 		Backend:   cmd.Backend,
 		Cache:     cmd.Cache,
 		Target:    target,
-		Storage:   aydo,
+		Storage:   store,
 		Reset:     cmd.Reset,
 	})
 

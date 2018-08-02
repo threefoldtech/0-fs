@@ -22,7 +22,9 @@ func (e exactMatch) In(h string) bool {
 		return false
 	}
 
-	return strings.Compare(string(e), h[0:len(e)]) == 0
+	head := strings.ToUpper(h[0:len(e)])
+
+	return strings.Compare(string(e), head) == 0
 }
 
 type rangeMatch [2]string
@@ -33,7 +35,7 @@ func (r rangeMatch) String() string {
 
 func (r rangeMatch) In(h string) bool {
 	//range match
-	head := h[0:len(r[0])]
+	head := strings.ToUpper(h[0:len(r[0])])
 
 	if strings.Compare(r[0], head) > 0 || strings.Compare(r[1], head) < 0 {
 		return false
