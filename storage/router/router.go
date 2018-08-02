@@ -6,6 +6,8 @@ import (
 	"io"
 	"io/ioutil"
 
+	"github.com/garyburd/redigo/redis"
+
 	"github.com/pkg/errors"
 )
 
@@ -29,9 +31,9 @@ func (r *Router) get(key string) (string, []byte, error) {
 		}
 
 		data, err := pool.Get(key)
-		//only try next entry if entry is not found in this pool
+		//only try next entry if entry is not found in this pool, or not routable
 		//otherwise return (nil, or other errors)
-		if err == ErrNotRoutable {
+		if err == ErrNotRoutable || err == redis.ErrNil {
 			continue
 		}
 
