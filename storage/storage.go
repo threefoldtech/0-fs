@@ -1,8 +1,9 @@
 package storage
 
 import (
-	"github.com/op/go-logging"
 	"io"
+
+	"github.com/op/go-logging"
 )
 
 var (
