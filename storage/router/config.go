@@ -54,7 +54,11 @@ func (c *Config) Valid() error {
 		}
 	}
 
-	return err
+	if err.HasErrors() {
+		return err
+	}
+
+	return nil
 }
 
 //Router returns a router that corresponds to configuration object

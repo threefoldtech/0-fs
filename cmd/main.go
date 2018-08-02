@@ -53,13 +53,28 @@ func mount(cmd *Cmd, target string) error {
 			}
 		}
 
+		f.Close()
+
 		metaStore, err = meta.NewRocksStore("", cmd.MetaDB)
 		if err != nil {
 			return fmt.Errorf("failed to initialize meta store: %s", err)
 		}
 	}
 
-	store, err := storage.NewSimpleStorage(cmd.URL)
+	var store storage.Storage
+	var err error
+	router := path.Join(cmd.MetaDB, "router.yaml")
+	if file, e := os.Open(router); e == nil {
+		log.Debugf("loading router config from: %s", router)
+		store, err = storage.NewStorage(file)
+		file.Close()
+	} else if os.IsNotExist(e) {
+		log.Debugf("no router config in meta, fallback to storage-url")
+		store, err = storage.NewSimpleStorage(cmd.URL)
+	} else {
+		return e
+	}
+
 	if err != nil {
 		return err
 	}
@@ -135,7 +150,7 @@ func main() {
 	flag.StringVar(&cmd.MetaDB, "meta", "", "Path to metadata database (optional)")
 	flag.StringVar(&cmd.Backend, "backend", "/tmp/backend", "Working directory of the filesystem (cache and others)")
 	flag.StringVar(&cmd.Cache, "cache", "", "Optional external (common) cache directory, if not provided a temporary cache location will be created under `backend`")
-	flag.StringVar(&cmd.URL, "storage-url", "ardb://hub.gig.tech:16379", "Storage url")
+	flag.StringVar(&cmd.URL, "storage-url", "ardb://hub.gig.tech:16379", "Fallback storage url in case no router.yaml available in db")
 	flag.BoolVar(&cmd.Debug, "debug", false, "Print debug messages")
 
 	flag.Parse()

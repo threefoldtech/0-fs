@@ -40,6 +40,34 @@ func NewSimpleStorage(url string) (Storage, error) {
 	return config.Router()
 }
 
+/*
+NewStorage creates a storage from a router.yaml file the config syntax is
+
+	pools:
+	  <pool-name>:
+		<hash-range>: <scheme>://host[:port]
+
+	lookup:
+	  - <pool-name>
+	  - ...
+
+Example:
+	pools:
+	  hub:
+		00:FF: ardb://hub.gig.tech:16379
+
+	lookup:
+	 - hub
+*/
+func NewStorage(c io.Reader) (Storage, error) {
+	conf, err := router.NewConfig(c)
+	if err != nil {
+		return nil, err
+	}
+
+	return conf.Router()
+}
+
 //Storage interface
 type Storage interface {
 	Get(key string) (io.ReadCloser, error)
