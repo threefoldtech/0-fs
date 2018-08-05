@@ -10,6 +10,14 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
+var (
+	//DefaultPoolFactory default pool implementation
+	DefaultPoolFactory PoolFactory = NewScanPool
+)
+
+//PoolFactory defines a pool factory method
+type PoolFactory func(...Rule) Pool
+
 //PoolConfig is a map from hash-range to destination
 type PoolConfig map[string]string
 
@@ -62,16 +70,19 @@ func (c *Config) Valid() error {
 }
 
 //Router returns a router that corresponds to configuration object
-func (c *Config) Router() (*Router, error) {
+func (c *Config) Router(factory PoolFactory) (*Router, error) {
+	if factory == nil {
+		factory = DefaultPoolFactory
+	}
+
 	router := Router{
-		Pools:  make(map[string]Pool),
-		Lookup: c.Lookup,
-		Cache:  c.Cache,
+		pools:  make(map[string]Pool),
+		lookup: c.Lookup,
+		cache:  c.Cache,
 	}
 
 	for name, cfg := range c.Pools {
-		pool := new(ScanPool)
-
+		var rules []Rule
 		for rangeStr, destStr := range cfg {
 			hashRange, err := NewRange(rangeStr)
 			if err != nil {
@@ -83,13 +94,10 @@ func (c *Config) Router() (*Router, error) {
 				return nil, errors.Wrap(err, destStr)
 			}
 
-			pool.Rules = append(
-				pool.Rules,
-				Rule{hashRange, dest},
-			)
+			rules = append(rules, Rule{hashRange, dest})
 		}
 
-		router.Pools[name] = pool
+		router.pools[name] = factory(rules...)
 	}
 
 	return &router, nil

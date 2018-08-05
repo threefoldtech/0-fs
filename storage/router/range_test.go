@@ -1,30 +1,29 @@
-package router_test
+package router
 
 import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/threefoldtech/0-fs/storage/router"
 )
 
 func TestNewRage(t *testing.T) {
-	_, err := router.NewRange("00")
+	_, err := NewRange("00")
 	if ok := assert.NoError(t, err); !ok {
 		t.Error()
 	}
 
-	_, err = router.NewRange("")
+	_, err = NewRange("")
 
 	if ok := assert.Error(t, err); !ok {
 		t.Error()
 	}
 
-	_, err = router.NewRange("00:FF")
+	_, err = NewRange("00:FF")
 	if ok := assert.NoError(t, err); !ok {
 		t.Error()
 	}
 
-	_, err = router.NewRange("00:FFA")
+	_, err = NewRange("00:FFA")
 	if ok := assert.Error(t, err); !ok {
 		t.Error()
 	}
@@ -32,7 +31,7 @@ func TestNewRage(t *testing.T) {
 }
 
 func TestRangeExact(t *testing.T) {
-	r, err := router.NewRange("1C")
+	r, err := NewRange("1C")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -51,7 +50,7 @@ func TestRangeExact(t *testing.T) {
 }
 
 func TestRange(t *testing.T) {
-	r, err := router.NewRange("01:c1")
+	r, err := NewRange("01:c1")
 	if err != nil {
 		t.Fatal(err)
 	}

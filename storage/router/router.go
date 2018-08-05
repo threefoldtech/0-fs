@@ -17,15 +17,15 @@ order defined by the table. And write to cache if wasn't retrieved from the
 cache pool
 */
 type Router struct {
-	Pools map[string]Pool
+	pools map[string]Pool
 
-	Lookup []string
-	Cache  []string
+	lookup []string
+	cache  []string
 }
 
 func (r *Router) get(key string) (string, []byte, error) {
-	for _, poolName := range r.Lookup {
-		pool, ok := r.Pools[poolName]
+	for _, poolName := range r.lookup {
+		pool, ok := r.pools[poolName]
 		if !ok {
 			return "", nil, ErrPoolNotFound
 		}
@@ -60,4 +60,34 @@ func (r *Router) Get(key string) (io.ReadCloser, error) {
 	buf := bytes.NewBuffer(data[16:])
 
 	return ioutil.NopCloser(buf), nil
+}
+
+//Merge merge multiple routers
+func Merge(routers ...*Router) *Router {
+	merged := Router{
+		pools: make(map[string]Pool),
+	}
+
+	if len(routers) == 0 {
+		panic("invalid call to merge")
+	}
+
+	for i, router := range routers {
+		for name, pool := range router.pools {
+			name = fmt.Sprintf("%d.%s", i, name)
+			merged.pools[name] = pool
+		}
+
+		for _, name := range router.lookup {
+			name = fmt.Sprintf("%d.%s", i, name)
+			merged.lookup = append(merged.lookup, name)
+		}
+
+		for _, name := range router.cache {
+			name = fmt.Sprintf("%d.%s", i, name)
+			merged.lookup = append(merged.cache, name)
+		}
+	}
+
+	return &merged
 }

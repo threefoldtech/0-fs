@@ -30,6 +30,13 @@ type ScanPool struct {
 	m sync.Mutex
 }
 
+//NewScanPool initialize a new scan pool
+func NewScanPool(rules ...Rule) Pool {
+	return &ScanPool{
+		Rules: rules,
+	}
+}
+
 //In checks if hash is in pool
 func (p *ScanPool) In(h string) bool {
 	for _, rule := range p.Rules {

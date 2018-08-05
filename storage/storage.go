@@ -37,7 +37,7 @@ func NewSimpleStorage(url string) (Storage, error) {
 		},
 	}
 
-	return config.Router()
+	return config.Router(nil) //nil for default pool implementation
 }
 
 /*
@@ -65,7 +65,7 @@ func NewStorage(c io.Reader) (Storage, error) {
 		return nil, err
 	}
 
-	return conf.Router()
+	return conf.Router(nil) //nil for default pool implementation
 }
 
 //Storage interface

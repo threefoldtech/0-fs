@@ -1,4 +1,4 @@
-package router_test
+package router
 
 import (
 	"bytes"
@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/threefoldtech/0-fs/storage/router"
 )
 
 func TestNewConfigSimple(t *testing.T) {
@@ -20,7 +19,7 @@ lookup:
 `
 	buf := bytes.NewBufferString(str)
 
-	config, err := router.NewConfig(buf)
+	config, err := NewConfig(buf)
 
 	if ok := assert.NoError(t, err); !ok {
 		t.Fatal()
@@ -56,7 +55,7 @@ cache:
 `
 	buf := bytes.NewBufferString(str)
 
-	config, err := router.NewConfig(buf)
+	config, err := NewConfig(buf)
 
 	if ok := assert.NoError(t, err); !ok {
 		t.Fatal()
@@ -101,31 +100,31 @@ cache:
 
 	buf := bytes.NewBufferString(str)
 
-	config, err := router.NewConfig(buf)
+	config, err := NewConfig(buf)
 
 	if ok := assert.NoError(t, err); !ok {
 		t.Fatal()
 	}
 
-	table, err := config.Router()
+	table, err := config.Router(NewScanPool)
 
 	if ok := assert.NoError(t, err); !ok {
 		t.Fatal()
 	}
 
-	if ok := assert.Equal(t, []string{"local", "hub"}, table.Lookup); !ok {
+	if ok := assert.Equal(t, []string{"local", "hub"}, table.lookup); !ok {
 		t.Error()
 	}
 
-	if ok := assert.Equal(t, []string{"local"}, table.Cache); !ok {
+	if ok := assert.Equal(t, []string{"local"}, table.cache); !ok {
 		t.Error()
 	}
 
-	if ok := assert.Len(t, table.Pools, 2); !ok {
+	if ok := assert.Len(t, table.pools, 2); !ok {
 		t.Error()
 	}
 
-	hub, ok := table.Pools["hub"].(*router.ScanPool)
+	hub, ok := table.pools["hub"].(*ScanPool)
 
 	if ok := assert.True(t, ok); !ok {
 		t.Fatal()
