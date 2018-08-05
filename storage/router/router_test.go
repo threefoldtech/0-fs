@@ -150,6 +150,7 @@ func TestMerget(t *testing.T) {
 			},
 		},
 		Lookup: []string{"local"},
+		Cache:  []string{"local"},
 	}
 
 	remote := Config{
@@ -175,10 +176,20 @@ func TestMerget(t *testing.T) {
 
 	key := "abcdef"
 	value := "result value"
+	//The set is expected to be call on localPool with the value retrieved from remote
+	localPool.On("Set", key, []byte(crcHeader+value)).Return(nil)
 	localPool.On("Get", key).Return(nil, ErrNotRoutable)
 	remotePool.On("Get", key).Return([]byte(crcHeader+value), nil)
 
 	router := Merge(localRouter, remoteRouter)
+
+	if ok := assert.Equal(t, []string{"0.local", "1.remote"}, router.lookup); !ok {
+		t.Error()
+	}
+
+	if ok := assert.Equal(t, []string{"0.local"}, router.cache); !ok {
+		t.Error()
+	}
 
 	ret, err := router.Get(key)
 
@@ -196,7 +207,12 @@ func TestMerget(t *testing.T) {
 		t.Error()
 	}
 
+	if ok := localPool.AssertCalled(t, "Set", key, []byte(crcHeader+value)); !ok {
+		t.Error()
+	}
+
 	if ok := remotePool.AssertCalled(t, "Get", key); !ok {
 		t.Error()
 	}
+
 }

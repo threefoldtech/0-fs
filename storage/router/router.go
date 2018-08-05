@@ -7,8 +7,13 @@ import (
 	"io/ioutil"
 
 	"github.com/garyburd/redigo/redis"
+	logging "github.com/op/go-logging"
 
 	"github.com/pkg/errors"
+)
+
+var (
+	log = logging.MustGetLogger("router")
 )
 
 /*
@@ -35,6 +40,9 @@ func (r *Router) get(key string) (string, []byte, error) {
 		//otherwise return (nil, or other errors)
 		if err == ErrNotRoutable || err == redis.ErrNil {
 			continue
+		} else if err != nil {
+			log.Errorf("pool(%s, %s) : %s", poolName, key, err)
+			continue
 		}
 
 		return poolName, data, err
@@ -43,14 +51,36 @@ func (r *Router) get(key string) (string, []byte, error) {
 	return "", nil, errors.Wrap(ErrNotRoutable, "no pools matches key")
 }
 
+/*
+updateCache will update keys that does not exist in local cache
+currently this is done sequentially, which means a GET for a block
+will not succeed unless the cache is updated. The errors of cache SET
+will only be logged thought and should not cause the GET operation to fail
+*/
+func (r *Router) updateCache(src, key string, data []byte) error {
+	for _, name := range r.cache {
+		if name == src {
+			//key was already retrieved from this pool, we skip
+			continue
+		}
+
+		pool := r.pools[name]
+		if err := pool.Set(key, data); err != nil {
+			log.Errorf("failed to update cache pool (%s): %s", name, err)
+		}
+	}
+
+	return nil
+}
+
 //Get gets key from table
 func (r *Router) Get(key string) (io.ReadCloser, error) {
-	_, data, err := r.get(key)
+	src, data, err := r.get(key)
 	if err != nil {
 		return nil, err
 	}
 
-	//TODO: replicate to cache
+	r.updateCache(src, key, data)
 
 	//TODO CRC check (gonna be dropped)
 	if len(data) <= 16 {
@@ -101,7 +131,7 @@ func Merge(routers ...*Router) *Router {
 
 		for _, name := range router.cache {
 			name = fmt.Sprintf("%d.%s", i, name)
-			merged.lookup = append(merged.cache, name)
+			merged.cache = append(merged.cache, name)
 		}
 	}
 
