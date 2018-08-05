@@ -141,3 +141,62 @@ func TestRouterGetError(t *testing.T) {
 		t.Error()
 	}
 }
+
+func TestMerget(t *testing.T) {
+	local := Config{
+		Pools: map[string]PoolConfig{
+			"local": PoolConfig{
+				"00:FF": "ardb://destination.local:1234",
+			},
+		},
+		Lookup: []string{"local"},
+	}
+
+	remote := Config{
+		Pools: map[string]PoolConfig{
+			"remote": PoolConfig{
+				"00:FF": "ardb://destination.local:1234",
+			},
+		},
+		Lookup: []string{"remote"},
+	}
+
+	localRouter, err := local.Router(newTestPool)
+	if ok := assert.NoError(t, err); !ok {
+		t.Fatal()
+	}
+	remoteRouter, err := remote.Router(newTestPool)
+	if ok := assert.NoError(t, err); !ok {
+		t.Fatal()
+	}
+
+	localPool := localRouter.pools["local"].(*TestPool)
+	remotePool := remoteRouter.pools["remote"].(*TestPool)
+
+	key := "abcdef"
+	value := "result value"
+	localPool.On("Get", key).Return(nil, ErrNotRoutable)
+	remotePool.On("Get", key).Return([]byte(crcHeader+value), nil)
+
+	router := Merge(localRouter, remoteRouter)
+
+	ret, err := router.Get(key)
+
+	if ok := assert.NoError(t, err); !ok {
+		t.Fatal()
+	}
+
+	result, _ := ioutil.ReadAll(ret)
+
+	if ok := assert.Equal(t, value, string(result)); !ok {
+		t.Error()
+	}
+
+	if ok := localPool.AssertCalled(t, "Get", key); !ok {
+		t.Error()
+	}
+
+	if ok := remotePool.AssertCalled(t, "Get", key); !ok {
+		t.Error()
+	}
+}
