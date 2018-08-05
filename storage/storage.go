@@ -25,7 +25,7 @@ var (
 )
 
 //NewSimpleStorage backward compatible storage for a single endpoint
-func NewSimpleStorage(url string) (Storage, error) {
+func NewSimpleStorage(url string) (*router.Router, error) {
 	config := router.Config{
 		Pools: map[string]router.PoolConfig{
 			"simple": {
@@ -59,7 +59,7 @@ Example:
 	lookup:
 	 - hub
 */
-func NewStorage(c io.Reader) (Storage, error) {
+func NewStorage(c io.Reader) (*router.Router, error) {
 	conf, err := router.NewConfig(c)
 	if err != nil {
 		return nil, err

@@ -13,6 +13,7 @@ import (
 	"github.com/threefoldtech/0-fs"
 	"github.com/threefoldtech/0-fs/meta"
 	"github.com/threefoldtech/0-fs/storage"
+	"github.com/threefoldtech/0-fs/storage/router"
 )
 
 var log = logging.MustGetLogger("main")
@@ -22,12 +23,32 @@ type Cmd struct {
 	Backend string
 	Cache   string
 	URL     string
+	Router  string
 	Reset   bool
 	Debug   bool
 }
 
 func (c *Cmd) Validate() []error {
 	return nil
+}
+
+func layerLocalStore(local string, store *router.Router) (*router.Router, error) {
+	if len(local) == 0 {
+		//no local router
+		return store, nil
+	}
+
+	config, err := router.NewConfigFromFile(local)
+	if err != nil {
+		return nil, err
+	}
+
+	localRouter, err := config.Router(nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return router.Merge(localRouter, store), nil
 }
 
 func mount(cmd *Cmd, target string) error {
@@ -61,7 +82,7 @@ func mount(cmd *Cmd, target string) error {
 		}
 	}
 
-	var store storage.Storage
+	var store *router.Router
 	var err error
 	router := path.Join(cmd.MetaDB, "router.yaml")
 	if file, e := os.Open(router); e == nil {
@@ -78,6 +99,13 @@ func mount(cmd *Cmd, target string) error {
 	if err != nil {
 		return err
 	}
+
+	store, err = layerLocalStore(cmd.Router, store)
+	if err != nil {
+		return err
+	}
+
+	log.Debug("router\n", store)
 
 	fs, err := g8ufs.Mount(&g8ufs.Options{
 		MetaStore: metaStore,
@@ -150,7 +178,8 @@ func main() {
 	flag.StringVar(&cmd.MetaDB, "meta", "", "Path to metadata database (optional)")
 	flag.StringVar(&cmd.Backend, "backend", "/tmp/backend", "Working directory of the filesystem (cache and others)")
 	flag.StringVar(&cmd.Cache, "cache", "", "Optional external (common) cache directory, if not provided a temporary cache location will be created under `backend`")
-	flag.StringVar(&cmd.URL, "storage-url", "ardb://hub.gig.tech:16379", "Fallback storage url in case no router.yaml available in db")
+	flag.StringVar(&cmd.URL, "storage-url", "ardb://hub.gig.tech:16379", "Fallback storage url in case no router.yaml available in flist")
+	flag.StringVar(&cmd.Router, "local-router", "", "Path to local router.yaml to merge with the router.yaml from the flist. This will allow adding some caching layers")
 	flag.BoolVar(&cmd.Debug, "debug", false, "Print debug messages")
 
 	flag.Parse()

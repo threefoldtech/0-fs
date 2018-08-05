@@ -1,6 +1,8 @@
 package router
 
 import (
+	"bytes"
+	"fmt"
 	"sync"
 	"time"
 
@@ -133,4 +135,17 @@ func (p *ScanPool) Set(key string, data []byte) error {
 
 	_, err = con.Do("SET", key, data)
 	return err
+}
+
+func (p *ScanPool) String() string {
+	var buf bytes.Buffer
+	buf.WriteString("scan-pool {\n")
+	for _, rule := range p.Rules {
+		buf.WriteString(
+			fmt.Sprintf("%s -> %s://%s\n", rule.Range, rule.Destination.Scheme, rule.Destination.Host),
+		)
+	}
+	buf.WriteString("}")
+
+	return buf.String()
 }

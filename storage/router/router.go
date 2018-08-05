@@ -62,6 +62,22 @@ func (r *Router) Get(key string) (io.ReadCloser, error) {
 	return ioutil.NopCloser(buf), nil
 }
 
+func (r *Router) String() string {
+	var buf bytes.Buffer
+	for name, pool := range r.pools {
+		buf.WriteString(fmt.Sprintf("%s %s\n\n", name, pool))
+	}
+	buf.WriteString("lookup:\n")
+	for _, name := range r.lookup {
+		buf.WriteString(fmt.Sprintf("- %s\n", name))
+	}
+	buf.WriteString("cache:\n")
+	for _, name := range r.cache {
+		buf.WriteString(fmt.Sprintf("- %s\n", name))
+	}
+	return buf.String()
+}
+
 //Merge merge multiple routers
 func Merge(routers ...*Router) *Router {
 	merged := Router{
