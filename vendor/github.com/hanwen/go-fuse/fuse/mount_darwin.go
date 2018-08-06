@@ -20,21 +20,9 @@ func openFUSEDevice() (*os.File, error) {
 		return nil, err
 	}
 	if len(fs) == 0 {
-		bin := oldLoadBin
-		if _, err := os.Stat(newLoadBin); err == nil {
-			bin = newLoadBin
-		}
-
-		cmd := exec.Command(bin)
-		if err := cmd.Run(); err != nil {
-			return nil, err
-		}
-		fs, err = filepath.Glob("/dev/osxfuse*")
-		if err != nil {
-			return nil, err
-		}
+		// TODO(hanwen): run the load_osxfuse command.
+		return nil, fmt.Errorf("no FUSE devices found")
 	}
-
 	for _, fn := range fs {
 		f, err := os.OpenFile(fn, os.O_RDWR, 0)
 		if err != nil {
@@ -45,9 +33,6 @@ func openFUSEDevice() (*os.File, error) {
 
 	return nil, fmt.Errorf("all FUSE devices busy")
 }
-
-const oldLoadBin = "/Library/Filesystems/osxfusefs.fs/Support/load_osxfusefs"
-const newLoadBin = "/Library/Filesystems/osxfuse.fs/Contents/Resources/load_osxfuse"
 
 const oldMountBin = "/Library/Filesystems/osxfusefs.fs/Support/mount_osxfusefs"
 const newMountBin = "/Library/Filesystems/osxfuse.fs/Contents/Resources/mount_osxfuse"

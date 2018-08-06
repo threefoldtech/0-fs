@@ -68,7 +68,7 @@ func mount(cmd *Cmd, target string) error {
 		if !info.IsDir() {
 			err = unpack(f, cmd.MetaDB+".d")
 			if err != nil {
-				log.Error(err)
+				log.Errorf("%s", err)
 			} else {
 				cmd.MetaDB = cmd.MetaDB + ".d"
 			}
@@ -157,7 +157,7 @@ func unpack(r io.Reader, dest string) error {
 
 		f, err := os.OpenFile(path.Join(dest, hdr.Name), os.O_CREATE|os.O_TRUNC|os.O_WRONLY, os.FileMode(hdr.Mode))
 		if err != nil {
-			log.Error(err)
+			log.Errorf("%s", err)
 			return err
 		}
 		if _, err := io.Copy(f, tr); err != nil {
