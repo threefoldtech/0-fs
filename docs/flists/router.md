@@ -42,7 +42,7 @@ lookup:
 ## Cache
 A `router.yaml` can define a `cache` list. Which lists a set of pools (one or more). A cache is always updated with a block once it's retrieved from the lookup. Usually an flist should not define a `cache` list. It's the user of the flist who would probably need to add his `cache` entries so blocks retrieved from remote are cached locally for faster access next time.
 
-`0-fs` provides a simple way to merge to `router.yaml`, a locally defined `router.yaml` with the one published by the flist itself. This way a user can hook in his local infrastructure for caching. For example, a user can has this local `router.yaml` file
+`0-fs` provides a simple way to merge to `router.yaml`, a locally defined `router.yaml` with the one published by the flist itself. This way a user can hook in his local infrastructure for caching. For example, a user can have this local `router.yaml` file like
 
 ```yaml
 pools:
