@@ -12,6 +12,9 @@ var (
 	//ErrNotRoutable when pool can't find a match for this hash
 	ErrNotRoutable = fmt.Errorf("not routable")
 
+	//ErrNotFound when key can't be found in a pool
+	ErrNotFound = fmt.Errorf("not found")
+
 	//ErrPoolNotFound when table reference a pool that is not configured
 	ErrPoolNotFound = fmt.Errorf("pool not found")
 

@@ -61,3 +61,6 @@ cd .. && gzip flist-example.db.tar
 ```
 
 The result is `flist-example.db.tar.gz` which is actually a flist for creating the container.
+
+# Block Rotuing
+Please check [block routing docs](routing.md)

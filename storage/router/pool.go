@@ -61,6 +61,18 @@ func (p *ScanPool) Route(h string) Destination {
 	return nil
 }
 
+//Routes returns all possible destinations for hash h.
+func (p *ScanPool) Routes(h string) []Destination {
+	var dest []Destination
+	for _, rule := range p.Rules {
+		if rule.In(h) {
+			dest = append(dest, rule.Destination)
+		}
+	}
+
+	return dest
+}
+
 func (p *ScanPool) newPool(d Destination) *redis.Pool {
 	return &redis.Pool{
 		Dial: func() (redis.Conn, error) {
@@ -100,22 +112,39 @@ func (p *ScanPool) getPool(d Destination) (*redis.Pool, error) {
 	return pool, nil
 }
 
-//Get key from pool
-func (p *ScanPool) Get(key string) ([]byte, error) {
-	dest := p.Route(key)
-	if dest == nil {
-		return nil, ErrNotRoutable
-	}
-
-	pool, err := p.getPool(dest)
-	if err != nil {
-		return nil, err
-	}
-
+func (p *ScanPool) get(pool *redis.Pool, key string) ([]byte, error) {
 	con := pool.Get()
 	defer con.Close()
 
 	return redis.Bytes(con.Do("GET", key))
+}
+
+//Get key from pool
+func (p *ScanPool) Get(key string) ([]byte, error) {
+	dests := p.Routes(key)
+	if len(dests) == 0 {
+		return nil, ErrNotRoutable
+	}
+
+	for _, dest := range dests {
+		pool, err := p.getPool(dest)
+		if err != nil {
+			return nil, err
+		}
+
+		data, err := p.get(pool, key)
+		if err != nil {
+			if err != redis.ErrNil {
+				log.Errorf("destination(%s://%s, %s): %s", dest.Scheme, dest.Host, key, err)
+			}
+
+			continue
+		}
+
+		return data, nil
+	}
+
+	return nil, ErrNotFound
 }
 
 //Set key to data
