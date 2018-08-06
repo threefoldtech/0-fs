@@ -38,3 +38,44 @@ lookup:
 - A hash match can define a range, for example a range can be `00:9F` will match all hashes that has prefixes [00, 9F]. The range can also have any length, for example a `000:FFF` is a valid range, As long as start and end prefixes are of the same length.
 
 > In a single pool, ranges can overlap. In that case, all valid destination will be tried.
+
+## Cache
+A `router.yaml` can define a `cache` list. Which lists a set of pools (one or more). A cache is always updated with a block once it's retrieved from the lookup. Usually an flist should not define a `cache` list. It's the user of the flist who would probably need to add his `cache` entries so blocks retrieved from remote are cached locally for faster access next time.
+
+`0-fs` provides a simple way to merge to `router.yaml`, a locally defined `router.yaml` with the one published by the flist itself. This way a user can hook in his local infrastructure for caching. For example, a user can has this local `router.yaml` file
+
+```yaml
+pools:
+  local:
+    00:FF : zdb://192.168.1.1:12345
+
+lookup:
+  - local
+
+cache:
+  - local
+```
+
+Then when starting the `0-fs` process, you can pass the path to this yaml file using the `-local-router` flag.
+`0-fs` will merge this with the `router.yaml` providing by the flist. Hence you'll end up with a an `router.yaml` that looks like this
+
+```yaml
+pools:
+  local:
+    00:FF: zdb://192.168.1.1:12345
+  remote:
+    00:FF: ardb://hub.gig.tech:16379
+
+lookup:
+  - local
+  - remote
+
+cache:
+  - local
+```
+
+This will configure `0-fs` to do the following
+- When retrieving a block, first try `local` pool.
+- If not exist try `remote` pool.
+- If block is retrieved successfully from a pool that is not listed in cache, update `local` with that block
+- Next time the same block is requested, it will be found in local, no call to remote would be needed.
