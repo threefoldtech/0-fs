@@ -78,7 +78,11 @@ func (c *Config) Router(factory PoolFactory) (*Router, error) {
 	router := Router{
 		pools:  make(map[string]Pool),
 		lookup: c.Lookup,
-		cache:  c.Cache,
+		cache:  make(map[string]struct{}),
+	}
+
+	for _, cache := range c.Cache {
+		router.cache[cache] = struct{}{}
 	}
 
 	for name, cfg := range c.Pools {

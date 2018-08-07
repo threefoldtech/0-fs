@@ -116,7 +116,7 @@ cache:
 		t.Error()
 	}
 
-	if ok := assert.Equal(t, []string{"local"}, table.cache); !ok {
+	if ok := assert.Equal(t, map[string]struct{}{"local": struct{}{}}, table.cache); !ok {
 		t.Error()
 	}
 

@@ -5,11 +5,16 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"sync"
 
 	"github.com/garyburd/redigo/redis"
 	logging "github.com/op/go-logging"
 
 	"github.com/pkg/errors"
+)
+
+const (
+	commitWorkers = 100
 )
 
 var (
@@ -25,7 +30,32 @@ type Router struct {
 	pools map[string]Pool
 
 	lookup []string
-	cache  []string
+	cache  map[string]struct{}
+	o      sync.Once
+	feed   chan chunk
+}
+
+type chunk struct {
+	key  string
+	data []byte
+}
+
+func (r *Router) init() {
+	r.feed = make(chan chunk)
+	for i := 0; i < commitWorkers; i++ {
+		go r.worker()
+	}
+}
+
+func (r *Router) worker() {
+	for chunk := range r.feed {
+		for name := range r.cache {
+			pool := r.pools[name]
+			if err := pool.Set(chunk.key, chunk.data); err != nil {
+				log.Errorf("failed to update cache pool (%s): %s", name, err)
+			}
+		}
+	}
 }
 
 func (r *Router) get(key string) (string, []byte, error) {
@@ -52,25 +82,17 @@ func (r *Router) get(key string) (string, []byte, error) {
 }
 
 /*
-updateCache will update keys that does not exist in local cache
-currently this is done sequentially, which means a GET for a block
-will not succeed unless the cache is updated. The errors of cache SET
-will only be logged thought and should not cause the GET operation to fail
+updateCache will update keys that does not exist in (any) of the  cache pools
 */
-func (r *Router) updateCache(src, key string, data []byte) error {
-	for _, name := range r.cache {
-		if name == src {
-			//key was already retrieved from this pool, we skip
-			continue
-		}
+func (r *Router) updateCache(src, key string, data []byte) {
+	r.o.Do(r.init)
 
-		pool := r.pools[name]
-		if err := pool.Set(key, data); err != nil {
-			log.Errorf("failed to update cache pool (%s): %s", name, err)
-		}
+	//only update cache if src is not one of the cache pools
+	if _, ok := r.cache[src]; ok {
+		return
 	}
 
-	return nil
+	r.feed <- chunk{key: key, data: data}
 }
 
 //Get gets key from table
@@ -112,6 +134,7 @@ func (r *Router) String() string {
 func Merge(routers ...*Router) *Router {
 	merged := Router{
 		pools: make(map[string]Pool),
+		cache: make(map[string]struct{}),
 	}
 
 	if len(routers) == 0 {
@@ -129,9 +152,9 @@ func Merge(routers ...*Router) *Router {
 			merged.lookup = append(merged.lookup, name)
 		}
 
-		for _, name := range router.cache {
+		for name := range router.cache {
 			name = fmt.Sprintf("%d.%s", i, name)
-			merged.cache = append(merged.cache, name)
+			merged.cache[name] = struct{}{}
 		}
 	}
 

@@ -2,6 +2,7 @@ package router
 
 import (
 	"io/ioutil"
+	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -14,6 +15,7 @@ var (
 
 type TestPool struct {
 	mock.Mock
+	wg sync.WaitGroup
 }
 
 func (t *TestPool) In(h string) bool {
@@ -35,6 +37,7 @@ func (t *TestPool) Get(key string) ([]byte, error) {
 }
 
 func (t *TestPool) Set(key string, data []byte) error {
+	defer t.wg.Done()
 	args := t.Called(key, data)
 	return args.Error(0)
 }
@@ -181,13 +184,15 @@ func TestMerget(t *testing.T) {
 	localPool.On("Get", key).Return(nil, ErrNotRoutable)
 	remotePool.On("Get", key).Return([]byte(crcHeader+value), nil)
 
+	localPool.wg.Add(1)
+
 	router := Merge(localRouter, remoteRouter)
 
 	if ok := assert.Equal(t, []string{"0.local", "1.remote"}, router.lookup); !ok {
 		t.Error()
 	}
 
-	if ok := assert.Equal(t, []string{"0.local"}, router.cache); !ok {
+	if ok := assert.Equal(t, map[string]struct{}{"0.local": struct{}{}}, router.cache); !ok {
 		t.Error()
 	}
 
@@ -206,7 +211,7 @@ func TestMerget(t *testing.T) {
 	if ok := localPool.AssertCalled(t, "Get", key); !ok {
 		t.Error()
 	}
-
+	localPool.wg.Wait()
 	if ok := localPool.AssertCalled(t, "Set", key, []byte(crcHeader+value)); !ok {
 		t.Error()
 	}
