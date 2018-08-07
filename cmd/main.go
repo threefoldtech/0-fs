@@ -6,7 +6,6 @@ import (
 	"flag"
 	"fmt"
 	"io"
-	"net/url"
 	"os"
 	"path"
 
@@ -14,6 +13,7 @@ import (
 	"github.com/threefoldtech/0-fs"
 	"github.com/threefoldtech/0-fs/meta"
 	"github.com/threefoldtech/0-fs/storage"
+	"github.com/threefoldtech/0-fs/storage/router"
 )
 
 var log = logging.MustGetLogger("main")
@@ -23,6 +23,7 @@ type Cmd struct {
 	Backend string
 	Cache   string
 	URL     string
+	Router  string
 	Reset   bool
 	Debug   bool
 }
@@ -31,16 +32,30 @@ func (c *Cmd) Validate() []error {
 	return nil
 }
 
-func mount(cmd *Cmd, target string) error {
-	u, err := url.Parse(cmd.URL)
-	if err != nil {
-		return err
+func layerLocalStore(local string, store *router.Router) (*router.Router, error) {
+	if len(local) == 0 {
+		//no local router
+		return store, nil
 	}
 
+	config, err := router.NewConfigFromFile(local)
+	if err != nil {
+		return nil, err
+	}
+
+	localRouter, err := config.Router(nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return router.Merge(localRouter, store), nil
+}
+
+func mount(cmd *Cmd, target string) error {
 	// Test if the meta path is a directory
 	// if not, it's maybe a flist/tar.gz
 
-	var store meta.MetaStore
+	var metaStore meta.MetaStore
 	if len(cmd.MetaDB) != 0 {
 		f, err := os.Open(cmd.MetaDB)
 		if err != nil {
@@ -53,29 +68,51 @@ func mount(cmd *Cmd, target string) error {
 		if !info.IsDir() {
 			err = unpack(f, cmd.MetaDB+".d")
 			if err != nil {
-				log.Error(err)
+				log.Errorf("%s", err)
 			} else {
 				cmd.MetaDB = cmd.MetaDB + ".d"
 			}
 		}
 
-		store, err = meta.NewRocksStore("", cmd.MetaDB)
+		f.Close()
+
+		metaStore, err = meta.NewRocksStore("", cmd.MetaDB)
 		if err != nil {
 			return fmt.Errorf("failed to initialize meta store: %s", err)
 		}
 	}
 
-	aydo, err := storage.NewARDBStorage(u)
+	var store *router.Router
+	var err error
+	router := path.Join(cmd.MetaDB, "router.yaml")
+	if file, e := os.Open(router); e == nil {
+		log.Debugf("loading router config from: %s", router)
+		store, err = storage.NewStorage(file)
+		file.Close()
+	} else if os.IsNotExist(e) {
+		log.Debugf("no router config in meta, fallback to storage-url")
+		store, err = storage.NewSimpleStorage(cmd.URL)
+	} else {
+		return e
+	}
+
 	if err != nil {
 		return err
 	}
 
+	store, err = layerLocalStore(cmd.Router, store)
+	if err != nil {
+		return err
+	}
+
+	log.Debug("router\n", store)
+
 	fs, err := g8ufs.Mount(&g8ufs.Options{
-		MetaStore: store,
+		MetaStore: metaStore,
 		Backend:   cmd.Backend,
 		Cache:     cmd.Cache,
 		Target:    target,
-		Storage:   aydo,
+		Storage:   store,
 		Reset:     cmd.Reset,
 	})
 
@@ -120,7 +157,7 @@ func unpack(r io.Reader, dest string) error {
 
 		f, err := os.OpenFile(path.Join(dest, hdr.Name), os.O_CREATE|os.O_TRUNC|os.O_WRONLY, os.FileMode(hdr.Mode))
 		if err != nil {
-			log.Error(err)
+			log.Errorf("%s", err)
 			return err
 		}
 		if _, err := io.Copy(f, tr); err != nil {
@@ -141,7 +178,8 @@ func main() {
 	flag.StringVar(&cmd.MetaDB, "meta", "", "Path to metadata database (optional)")
 	flag.StringVar(&cmd.Backend, "backend", "/tmp/backend", "Working directory of the filesystem (cache and others)")
 	flag.StringVar(&cmd.Cache, "cache", "", "Optional external (common) cache directory, if not provided a temporary cache location will be created under `backend`")
-	flag.StringVar(&cmd.URL, "storage-url", "ardb://hub.gig.tech:16379", "Storage url")
+	flag.StringVar(&cmd.URL, "storage-url", "ardb://hub.gig.tech:16379", "Fallback storage url in case no router.yaml available in flist")
+	flag.StringVar(&cmd.Router, "local-router", "", "Path to local router.yaml to merge with the router.yaml from the flist. This will allow adding some caching layers")
 	flag.BoolVar(&cmd.Debug, "debug", false, "Print debug messages")
 
 	flag.Parse()

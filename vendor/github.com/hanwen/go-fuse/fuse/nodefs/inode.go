@@ -24,6 +24,10 @@ type parentData struct {
 type Inode struct {
 	handled handled
 
+	// Generation number of the inode. Each (re)use of an inode
+	// should have a unique generation number.
+	generation uint64
+
 	// Number of open files and its protection.
 	openFilesMutex sync.Mutex
 	openFiles      []*openedFile
@@ -90,8 +94,6 @@ func (n *Inode) Parent() (parent *Inode, name string) {
 	if n.mountPoint != nil {
 		return nil, ""
 	}
-	n.mount.treeLock.RLock()
-	defer n.mount.treeLock.RUnlock()
 	for k := range n.parents {
 		return k.parent, k.name
 	}
