@@ -70,5 +70,5 @@ func NewStorage(c io.Reader) (*router.Router, error) {
 
 //Storage interface
 type Storage interface {
-	Get(key string) (io.ReadCloser, error)
+	Get(key []byte) (io.ReadCloser, error)
 }

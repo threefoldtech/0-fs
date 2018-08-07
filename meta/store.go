@@ -2,6 +2,7 @@ package meta
 
 import (
 	"bytes"
+	"database/sql"
 	"errors"
 	"fmt"
 	"io"
@@ -12,8 +13,8 @@ import (
 	"time"
 
 	"github.com/codahale/blake2"
+	_ "github.com/mattn/go-sqlite3"
 	"github.com/patrickmn/go-cache"
-	rocksdb "github.com/tecbot/gorocksdb"
 	np "github.com/threefoldtech/0-fs/cap.np"
 	"zombiezen.com/go/capnproto2"
 )
@@ -32,62 +33,59 @@ var (
 const (
 	//TraverseLimit capnp message traverse limit
 	TraverseLimit = ^uint64(0)
+
+	SQLiteDBName = "flistdb.sqlite3"
 )
 
-//NewRocksStore creates a new rocks store with namespace ns, and path p
-func NewRocksStore(ns, p string) (MetaStore, error) {
-	opt := rocksdb.NewDefaultOptions()
-	db, err := rocksdb.OpenDbForReadOnly(opt, p, false)
+//NewStore creates a new meta store with path p
+func NewStore(p string) (MetaStore, error) {
+	p = path.Join(p, SQLiteDBName)
+	db, err := sql.Open("sqlite3", p)
 	if err != nil {
 		return nil, err
 	}
 
-	ro := rocksdb.NewDefaultReadOptions()
+	stmt, err := db.Prepare("select value from entries where key = ?")
+	if err != nil {
+		return nil, err
+	}
 
-	return &rocksStore{
+	return &sqlStore{
 		db:    db,
-		ro:    ro,
-		ns:    ns,
+		stmt:  stmt,
 		cache: cache.New(60*time.Second, 20*time.Second),
 	}, nil
 }
 
-type rocksStore struct {
-	db *rocksdb.DB
-	ro *rocksdb.ReadOptions
-	ns string
+type sqlStore struct {
+	stmt *sql.Stmt
+	db   *sql.DB
 
 	cache *cache.Cache
 }
 
-func (s *rocksStore) hash(path string) string {
+func (s *sqlStore) hash(path string) string {
 	bl2b := blake2.New(&blake2.Config{
-		Size: 32,
+		Size: 16,
 	})
-	io.WriteString(bl2b, fmt.Sprintf("%s%s", s.ns, path))
+	io.WriteString(bl2b, path)
 
-	hash := fmt.Sprintf("%x", bl2b.Sum(nil))
-	if s.ns != "" {
-		return fmt.Sprintf("%s:%s", s.ns, hash)
-	}
-
-	return hash
+	return fmt.Sprintf("%x", bl2b.Sum(nil))
 }
 
 //getACI gets aci object with key from db
-func (s *rocksStore) getACI(key string) (*np.ACI, error) {
-	slice, err := s.db.Get(s.ro, []byte(key))
-	if err != nil {
-		log.Debugf("failed to get slice for aci %s: %s", key, err)
+func (s *sqlStore) getACI(key string) (*np.ACI, error) {
+	row := s.stmt.QueryRow(key)
+	var data []byte
+
+	if err := row.Scan(&data); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, errNoACI
+		}
 		return nil, err
 	}
 
-	if slice.Size() == 0 {
-		// no ACI attached with the object
-		return nil, errNoACI
-	}
-
-	msg, err := capnp.NewDecoder(bytes.NewBuffer(slice.Data())).Decode()
+	msg, err := capnp.NewDecoder(bytes.NewBuffer(data)).Decode()
 	if err != nil {
 		log.Debugf("failed to get msg for aci %s: %s", key, err)
 		return nil, err
@@ -102,7 +100,7 @@ func (s *rocksStore) getACI(key string) (*np.ACI, error) {
 }
 
 //getAccess gets access object from db
-func (s *rocksStore) getAccess(key string) (Access, error) {
+func (s *sqlStore) getAccess(key string) (Access, error) {
 	aci, err := s.getACI(key)
 	if err != nil {
 		log.Debugf("failed to get aci for key %s: %s", key, err)
@@ -136,7 +134,7 @@ func (s *rocksStore) getAccess(key string) (Access, error) {
 }
 
 //getDir gets dir entry from db
-func (s *rocksStore) getDir(path string) (*Dir, error) {
+func (s *sqlStore) getDir(path string) (*Dir, error) {
 	if path == "." {
 		path = ""
 	}
@@ -147,17 +145,15 @@ func (s *rocksStore) getDir(path string) (*Dir, error) {
 }
 
 //getDir gets dir entry from db
-func (s *rocksStore) getDirWithHash(hash string) (*Dir, error) {
-	slice, err := s.db.Get(s.ro, []byte(hash))
-	if err != nil {
-		log.Debugf("failed to get slice for hash %s: %s", hash, err)
+func (s *sqlStore) getDirWithHash(hash string) (*Dir, error) {
+	row := s.stmt.QueryRow(hash)
+	var data []byte
+	if err := row.Scan(&data); err != nil {
 		return nil, err
 	}
 
-	defer slice.Free()
-
 	//we need to load this slice as a capnpn dir
-	msg, err := capnp.NewDecoder(bytes.NewBuffer(slice.Data())).Decode()
+	msg, err := capnp.NewDecoder(bytes.NewBuffer(data)).Decode()
 	if err != nil {
 		log.Debugf("failed to get msg from slice %s: %s", hash, err)
 		return nil, err
@@ -184,7 +180,7 @@ func (s *rocksStore) getDirWithHash(hash string) (*Dir, error) {
 	return &Dir{Dir: dir, store: s, access: access}, nil
 }
 
-func (s *rocksStore) get(p string) (Meta, error) {
+func (s *sqlStore) get(p string) (Meta, error) {
 	if m, ok := s.cache.Get(p); ok {
 		return m.(Meta), nil
 	}
@@ -227,7 +223,7 @@ func (s *rocksStore) get(p string) (Meta, error) {
 	return nil, ErrNotFound
 }
 
-func (s *rocksStore) Get(path string) (Meta, bool) {
+func (s *sqlStore) Get(path string) (Meta, bool) {
 	meta, err := s.get(path)
 	if err != nil {
 		log.Debugf("cannot resolve %s: %s", path, err)

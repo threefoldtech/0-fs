@@ -1,6 +1,7 @@
 package router
 
 import (
+	"bytes"
 	"fmt"
 	"regexp"
 	"strings"
@@ -12,32 +13,32 @@ var (
 
 //Range defines a hash range matcher
 type Range interface {
-	In(h string) bool
+	In(h []byte) bool
 }
 
-type exactMatch string
+type exactMatch []byte
 
-func (e exactMatch) In(h string) bool {
+func (e exactMatch) In(h []byte) bool {
 	if len(h) < len(e) {
 		return false
 	}
 
-	head := strings.ToUpper(h[0:len(e)])
+	head := h[0:len(e)]
 
-	return strings.Compare(string(e), head) == 0
+	return bytes.Compare(e, head) == 0
 }
 
-type rangeMatch [2]string
+type rangeMatch [2][]byte
 
 func (r rangeMatch) String() string {
-	return fmt.Sprintf("%s:%s", r[0], r[1])
+	return fmt.Sprintf("%x:%x", r[0], r[1])
 }
 
-func (r rangeMatch) In(h string) bool {
+func (r rangeMatch) In(h []byte) bool {
 	//range match
-	head := strings.ToUpper(h[0:len(r[0])])
+	head := h[0:len(r[0])]
 
-	if strings.Compare(r[0], head) > 0 || strings.Compare(r[1], head) < 0 {
+	if bytes.Compare(r[0], head) > 0 || bytes.Compare(r[1], head) < 0 {
 		return false
 	}
 
@@ -54,14 +55,19 @@ func NewRange(r string) (Range, error) {
 	start := strings.ToUpper(match[1])
 	end := strings.ToUpper(match[2])
 
+	var startBytes []byte
+	fmt.Sscanf(start, "%x", &startBytes)
 	if len(end) == 0 {
-		return exactMatch(start), nil
+		return exactMatch(startBytes), nil
 	}
 
+	var endBytes []byte
+	fmt.Sscanf(end, "%x", &endBytes)
+
 	//if range has an end (not exact match) the start and end must be of equal length
-	if len(end) != len(start) {
+	if len(startBytes) != len(endBytes) {
 		return nil, ErrInvalidRange
 	}
 
-	return rangeMatch{start, end}, nil
+	return rangeMatch{startBytes, endBytes}, nil
 }

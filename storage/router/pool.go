@@ -13,8 +13,8 @@ import (
 type Pool interface {
 	Range
 	Route(h string) Destination
-	Get(key string) ([]byte, error)
-	Set(key string, data []byte) error
+	Get(key []byte) ([]byte, error)
+	Set(key []byte, data []byte) error
 }
 
 /*
@@ -51,7 +51,7 @@ func (p *ScanPool) In(h string) bool {
 }
 
 //Route matches hash against the pool and return the first matched destination
-func (p *ScanPool) Route(h string) Destination {
+func (p *ScanPool) Route(h []byte) Destination {
 	for _, rule := range p.Rules {
 		if rule.In(h) {
 			return rule.Destination
@@ -62,7 +62,7 @@ func (p *ScanPool) Route(h string) Destination {
 }
 
 //Routes returns all possible destinations for hash h.
-func (p *ScanPool) Routes(h string) []Destination {
+func (p *ScanPool) Routes(h []byte) []Destination {
 	var dest []Destination
 	for _, rule := range p.Rules {
 		if rule.In(h) {
@@ -112,7 +112,7 @@ func (p *ScanPool) getPool(d Destination) (*redis.Pool, error) {
 	return pool, nil
 }
 
-func (p *ScanPool) get(pool *redis.Pool, key string) ([]byte, error) {
+func (p *ScanPool) get(pool *redis.Pool, key []byte) ([]byte, error) {
 	con := pool.Get()
 	defer con.Close()
 
@@ -120,7 +120,7 @@ func (p *ScanPool) get(pool *redis.Pool, key string) ([]byte, error) {
 }
 
 //Get key from pool
-func (p *ScanPool) Get(key string) ([]byte, error) {
+func (p *ScanPool) Get(key []byte) ([]byte, error) {
 	dests := p.Routes(key)
 	if len(dests) == 0 {
 		return nil, ErrNotRoutable
@@ -148,7 +148,7 @@ func (p *ScanPool) Get(key string) ([]byte, error) {
 }
 
 //Set key to data
-func (p *ScanPool) Set(key string, data []byte) error {
+func (p *ScanPool) Set(key, data []byte) error {
 	dest := p.Route(key)
 	if dest == nil {
 		return ErrNotRoutable

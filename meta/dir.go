@@ -7,7 +7,7 @@ import (
 //Dir represents a dir inode
 type Dir struct {
 	np.Dir
-	store  *rocksStore
+	store  *sqlStore
 	access Access
 }
 

@@ -36,7 +36,7 @@ type Router struct {
 }
 
 type chunk struct {
-	key  string
+	key  []byte
 	data []byte
 }
 
@@ -58,7 +58,7 @@ func (r *Router) worker() {
 	}
 }
 
-func (r *Router) get(key string) (string, []byte, error) {
+func (r *Router) get(key []byte) (string, []byte, error) {
 	for _, poolName := range r.lookup {
 		pool, ok := r.pools[poolName]
 		if !ok {
@@ -84,7 +84,7 @@ func (r *Router) get(key string) (string, []byte, error) {
 /*
 updateCache will update keys that does not exist in (any) of the  cache pools
 */
-func (r *Router) updateCache(src, key string, data []byte) {
+func (r *Router) updateCache(src string, key []byte, data []byte) {
 	r.o.Do(r.init)
 
 	//only update cache if src is not one of the cache pools
@@ -96,7 +96,7 @@ func (r *Router) updateCache(src, key string, data []byte) {
 }
 
 //Get gets key from table
-func (r *Router) Get(key string) (io.ReadCloser, error) {
+func (r *Router) Get(key []byte) (io.ReadCloser, error) {
 	src, data, err := r.get(key)
 	if err != nil {
 		return nil, err
