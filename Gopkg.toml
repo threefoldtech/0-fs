@@ -43,7 +43,7 @@
 
 [[constraint]]
   name = "github.com/op/go-logging"
-  version = "1.0.0"
+  branch = "master"
 
 [[constraint]]
   name = "github.com/patrickmn/go-cache"
@@ -56,10 +56,6 @@
 [[constraint]]
   name = "github.com/stretchr/testify"
   version = "1.2.2"
-
-[[constraint]]
-  branch = "master"
-  name = "github.com/tecbot/gorocksdb"
 
 [[constraint]]
   branch = "master"
