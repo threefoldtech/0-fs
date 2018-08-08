@@ -4,12 +4,29 @@ import (
 	"bytes"
 	"fmt"
 	"regexp"
-	"strings"
 )
 
 var (
 	rangeMatchRegex = regexp.MustCompile(`^(?P<start>[0-9a-fA-F]+)(?::(?P<end>[0-9a-fA-F]+))?$`)
 )
+
+//HexToBytes converts a hexstring to byte array
+func HexToBytes(s string) []byte {
+	if len(s) == 0 {
+		return nil
+	}
+	if len(s)%2 == 1 {
+		//odd hex (012) for example is invalid, we fix this by
+		//adding a trailing 0 to become 01 20
+		s += "0"
+	}
+	var data []byte
+	if _, err := fmt.Sscanf(s, "%x", &data); err != nil {
+		panic(err)
+	}
+
+	return data
+}
 
 //Range defines a hash range matcher
 type Range interface {
@@ -26,6 +43,10 @@ func (e exactMatch) In(h []byte) bool {
 	head := h[0:len(e)]
 
 	return bytes.Compare(e, head) == 0
+}
+
+func (e exactMatch) String() string {
+	return fmt.Sprintf("%x", []byte(e))
 }
 
 type rangeMatch [2][]byte
@@ -52,22 +73,17 @@ func NewRange(r string) (Range, error) {
 		return nil, ErrInvalidRange
 	}
 
-	start := strings.ToUpper(match[1])
-	end := strings.ToUpper(match[2])
+	start := HexToBytes(match[1])
+	end := HexToBytes(match[2])
 
-	var startBytes []byte
-	fmt.Sscanf(start, "%x", &startBytes)
 	if len(end) == 0 {
-		return exactMatch(startBytes), nil
+		return exactMatch(start), nil
 	}
 
-	var endBytes []byte
-	fmt.Sscanf(end, "%x", &endBytes)
-
 	//if range has an end (not exact match) the start and end must be of equal length
-	if len(startBytes) != len(endBytes) {
+	if len(start) != len(end) {
 		return nil, ErrInvalidRange
 	}
 
-	return rangeMatch{startBytes, endBytes}, nil
+	return rangeMatch{start, end}, nil
 }
