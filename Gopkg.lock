@@ -43,7 +43,7 @@ ignored = ["github.com/tecbot/gorocksdb"]
   name = "github.com/op/go-logging"
   packages = ["."]
   revision = "b2cb9fa56473e98db8caba80237377e83fe44db5"
-  version = "master"
+  version = "v1"
 
 [[projects]]
   name = "github.com/patrickmn/go-cache"
