@@ -8,9 +8,9 @@ import (
 	"os"
 
 	"github.com/golang/snappy"
-	"github.com/xxtea/xxtea-go/xxtea"
 	"github.com/threefoldtech/0-fs/meta"
 	"github.com/threefoldtech/0-fs/storage"
+	"github.com/xxtea/xxtea-go/xxtea"
 
 	"golang.org/x/sync/errgroup"
 )
@@ -33,8 +33,8 @@ type OutputBlock struct {
 }
 
 func (d *Downloader) DownloadBlock(block meta.BlockInfo) ([]byte, error) {
-	log.Debugf("downloading block %s", string(block.Key))
-	body, err := d.Storage.Get(string(block.Key))
+	log.Debugf("downloading block %x", block.Key)
+	body, err := d.Storage.Get(block.Key)
 	if err != nil {
 		return nil, err
 	}

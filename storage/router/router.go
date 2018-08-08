@@ -104,14 +104,7 @@ func (r *Router) Get(key []byte) (io.ReadCloser, error) {
 
 	r.updateCache(src, key, data)
 
-	//TODO CRC check (gonna be dropped)
-	if len(data) <= 16 {
-		return nil, fmt.Errorf("wrong data size")
-	}
-
-	buf := bytes.NewBuffer(data[16:])
-
-	return ioutil.NopCloser(buf), nil
+	return ioutil.NopCloser(bytes.NewBuffer(data)), nil
 }
 
 func (r *Router) String() string {
