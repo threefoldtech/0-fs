@@ -23,9 +23,6 @@ _testmain.go
 *.test
 *.prof
 
-aysfs
-*.toml
-*.bolt
 
 .idea
 *.iml
