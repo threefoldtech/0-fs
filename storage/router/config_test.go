@@ -136,7 +136,7 @@ cache:
 
 	rule := hub.Rules[0]
 
-	if ok := assert.Equal(t, fmt.Sprint(rule.Range), "00:FF"); !ok {
+	if ok := assert.Equal(t, fmt.Sprint(rule.Range), "00:ff"); !ok {
 		t.Error()
 	}
 }

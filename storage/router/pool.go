@@ -12,7 +12,7 @@ import (
 //Pool defines a pool interface
 type Pool interface {
 	Range
-	Route(h string) Destination
+	Route(h []byte) Destination
 	Get(key []byte) ([]byte, error)
 	Set(key []byte, data []byte) error
 }
@@ -40,7 +40,7 @@ func NewScanPool(rules ...Rule) Pool {
 }
 
 //In checks if hash is in pool
-func (p *ScanPool) In(h string) bool {
+func (p *ScanPool) In(h []byte) bool {
 	for _, rule := range p.Rules {
 		if rule.In(h) {
 			return true
