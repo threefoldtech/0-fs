@@ -40,7 +40,7 @@ const (
 //NewStore creates a new meta store with path p
 func NewStore(p string) (MetaStore, error) {
 	p = path.Join(p, SQLiteDBName)
-	db, err := sql.Open("sqlite3", p)
+	db, err := sql.Open("sqlite3", fmt.Sprintf("file:%s?mode=ro", p))
 	if err != nil {
 		return nil, err
 	}
@@ -54,6 +54,10 @@ func NewStore(p string) (MetaStore, error) {
 		db:    db,
 		stmt:  stmt,
 		cache: cache.New(60*time.Second, 20*time.Second),
+		acl:   cache.New(5*time.Minute, 2*time.Minute),
+
+		users:  make(map[string]int),
+		groups: make(map[string]int),
 	}, nil
 }
 
@@ -61,7 +65,10 @@ type sqlStore struct {
 	stmt *sql.Stmt
 	db   *sql.DB
 
-	cache *cache.Cache
+	cache  *cache.Cache
+	acl    *cache.Cache
+	users  map[string]int
+	groups map[string]int
 }
 
 func (s *sqlStore) hash(path string) string {
@@ -75,6 +82,10 @@ func (s *sqlStore) hash(path string) string {
 
 //getACI gets aci object with key from db
 func (s *sqlStore) getACI(key string) (*np.ACI, error) {
+	if aci, ok := s.acl.Get(key); ok {
+		return aci.(*np.ACI), nil
+	}
+
 	row := s.stmt.QueryRow(key)
 	var data []byte
 
@@ -96,7 +107,38 @@ func (s *sqlStore) getACI(key string) (*np.ACI, error) {
 		return nil, err
 	}
 
+	s.acl.Set(key, &aci, cache.DefaultExpiration)
 	return &aci, nil
+}
+
+func (s *sqlStore) lookUpUser(name string) int {
+	if id, ok := s.users[name]; ok {
+		return id
+	}
+	uid := 1000
+	if u, err := user.Lookup(name); err == nil {
+		if id, err := strconv.ParseInt(u.Uid, 10, 32); err == nil {
+			uid = int(id)
+		}
+	}
+
+	s.users[name] = uid
+	return uid
+}
+
+func (s *sqlStore) lookUpGroup(name string) int {
+	if id, ok := s.groups[name]; ok {
+		return id
+	}
+	gid := 1000
+	if g, err := user.LookupGroup(name); err == nil {
+		if id, err := strconv.ParseInt(g.Gid, 10, 32); err == nil {
+			gid = int(id)
+		}
+	}
+
+	s.groups[name] = gid
+	return gid
 }
 
 //getAccess gets access object from db
@@ -111,20 +153,8 @@ func (s *sqlStore) getAccess(key string) (Access, error) {
 	gname, _ := aci.Gname()
 	mode := uint32(aci.Mode())
 
-	uid := 1000
-	gid := 1000
-
-	if u, err := user.Lookup(uname); err == nil {
-		if id, err := strconv.ParseInt(u.Uid, 10, 32); err != nil {
-			uid = int(id)
-		}
-	}
-
-	if g, err := user.LookupGroup(gname); err == nil {
-		if id, err := strconv.ParseInt(g.Gid, 10, 32); err != nil {
-			gid = int(id)
-		}
-	}
+	uid := s.lookUpUser(uname)
+	gid := s.lookUpGroup(gname)
 
 	return Access{
 		Mode: uint32(os.ModePerm) & mode,
