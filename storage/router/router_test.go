@@ -9,10 +9,6 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
-var (
-	crcHeader = "xxxxxxxxxxxxxxxx" //16 bytes of CRC
-)
-
 type TestPool struct {
 	mock.Mock
 	wg sync.WaitGroup
@@ -65,7 +61,7 @@ func TestRouterGetSuccess(t *testing.T) {
 	key := HexToBytes("abcdef")
 	value := "result value"
 	pool := router.pools["local"].(*TestPool)
-	pool.On("Get", key).Return([]byte(crcHeader+value), nil)
+	pool.On("Get", key).Return([]byte(value), nil)
 	ret, err := router.Get(key)
 
 	if ok := assert.NoError(t, err); !ok {
@@ -104,7 +100,7 @@ func TestRouterGetLocalMiss(t *testing.T) {
 	pool := router.pools["local"].(*TestPool)
 	pool.On("Get", key).Return(nil, ErrNotRoutable)
 	pool = router.pools["remote"].(*TestPool)
-	pool.On("Get", key).Return([]byte(crcHeader+value), nil)
+	pool.On("Get", key).Return([]byte(value), nil)
 
 	ret, err := router.Get(key)
 
@@ -180,9 +176,9 @@ func TestMerget(t *testing.T) {
 	key := HexToBytes("abcdef")
 	value := "result value"
 	//The set is expected to be call on localPool with the value retrieved from remote
-	localPool.On("Set", key, []byte(crcHeader+value)).Return(nil)
+	localPool.On("Set", key, []byte(value)).Return(nil)
 	localPool.On("Get", key).Return(nil, ErrNotRoutable)
-	remotePool.On("Get", key).Return([]byte(crcHeader+value), nil)
+	remotePool.On("Get", key).Return([]byte(value), nil)
 
 	localPool.wg.Add(1)
 
@@ -212,7 +208,7 @@ func TestMerget(t *testing.T) {
 		t.Error()
 	}
 	localPool.wg.Wait()
-	if ok := localPool.AssertCalled(t, "Set", key, []byte(crcHeader+value)); !ok {
+	if ok := localPool.AssertCalled(t, "Set", key, []byte(value)); !ok {
 		t.Error()
 	}
 
