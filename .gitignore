@@ -31,3 +31,5 @@ tags
 *.swp
 cmd/cmd
 g8ufs
+
+coverage.txt
