@@ -7,7 +7,7 @@ install: skip
 
 script:
   - make build
-  - make test
+  - make test-race
   - make coverage
 
 after_success:

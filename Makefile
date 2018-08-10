@@ -23,5 +23,4 @@ test-race:
 	go test -v -race ./...
 
 coverage: build
-	@echo "Running all coverage for minio"
 	@(env bash gocoverage.sh)
