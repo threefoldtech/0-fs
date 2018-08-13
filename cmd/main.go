@@ -151,7 +151,7 @@ func unpack(r io.Reader, dest string) error {
 		if err != nil {
 			return err
 		}
-		if hdr.Name == "/" {
+		if hdr.Name == "/" || hdr.Name == "./" {
 			continue
 		}
 
