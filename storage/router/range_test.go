@@ -36,15 +36,15 @@ func TestRangeExact(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if ok := assert.True(t, r.In("1cabc")); !ok {
+	if ok := assert.True(t, r.In(HexToBytes("1cabc"))); !ok {
 		t.Error()
 	}
 
-	if ok := assert.False(t, r.In("0")); !ok {
+	if ok := assert.False(t, r.In(HexToBytes("0"))); !ok {
 		t.Error()
 	}
 
-	if ok := assert.False(t, r.In("")); !ok {
+	if ok := assert.False(t, r.In(HexToBytes(""))); !ok {
 		t.Error()
 	}
 }
@@ -55,27 +55,27 @@ func TestRange(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if ok := assert.True(t, r.In("01")); !ok {
+	if ok := assert.True(t, r.In(HexToBytes("01"))); !ok {
 		t.Error()
 	}
 
-	if ok := assert.True(t, r.In("11")); !ok {
+	if ok := assert.True(t, r.In(HexToBytes("11"))); !ok {
 		t.Error()
 	}
 
-	if ok := assert.True(t, r.In("01")); !ok {
+	if ok := assert.True(t, r.In(HexToBytes("01"))); !ok {
 		t.Error()
 	}
 
-	if ok := assert.True(t, r.In("ba39055da55fb79da29f23848d3120b220f543dedd9081d0bdf463928eef7491")); !ok {
+	if ok := assert.True(t, r.In(HexToBytes("ba39055da55fb79da29f23848d3120b220f543dedd9081d0bdf463928eef7491"))); !ok {
 		t.Error()
 	}
 
-	if ok := assert.False(t, r.In("c2123")); !ok {
+	if ok := assert.False(t, r.In(HexToBytes("c2123"))); !ok {
 		t.Error()
 	}
 
-	if ok := assert.False(t, r.In("00")); !ok {
+	if ok := assert.False(t, r.In(HexToBytes("00"))); !ok {
 		t.Error()
 	}
 

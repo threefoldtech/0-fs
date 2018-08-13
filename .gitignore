@@ -23,9 +23,6 @@ _testmain.go
 *.test
 *.prof
 
-aysfs
-*.toml
-*.bolt
 
 .idea
 *.iml
@@ -34,3 +31,5 @@ tags
 *.swp
 cmd/cmd
 g8ufs
+
+coverage.txt

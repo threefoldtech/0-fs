@@ -9,25 +9,21 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
-var (
-	crcHeader = "xxxxxxxxxxxxxxxx" //16 bytes of CRC
-)
-
 type TestPool struct {
 	mock.Mock
 	wg sync.WaitGroup
 }
 
-func (t *TestPool) In(h string) bool {
+func (t *TestPool) In(h []byte) bool {
 	args := t.Called(h)
 	return args.Bool(0)
 }
-func (t *TestPool) Route(h string) Destination {
+func (t *TestPool) Route(h []byte) Destination {
 	args := t.Called(h)
 	return args.Get(0).(Destination)
 }
 
-func (t *TestPool) Get(key string) ([]byte, error) {
+func (t *TestPool) Get(key []byte) ([]byte, error) {
 	args := t.Called(key)
 	if data := args.Get(0); data != nil {
 		return data.([]byte), args.Error(1)
@@ -36,7 +32,7 @@ func (t *TestPool) Get(key string) ([]byte, error) {
 	return nil, args.Error(1)
 }
 
-func (t *TestPool) Set(key string, data []byte) error {
+func (t *TestPool) Set(key, data []byte) error {
 	defer t.wg.Done()
 	args := t.Called(key, data)
 	return args.Error(0)
@@ -62,10 +58,10 @@ func TestRouterGetSuccess(t *testing.T) {
 		t.Fatal()
 	}
 
-	key := "abcdef"
+	key := HexToBytes("abcdef")
 	value := "result value"
 	pool := router.pools["local"].(*TestPool)
-	pool.On("Get", key).Return([]byte(crcHeader+value), nil)
+	pool.On("Get", key).Return([]byte(value), nil)
 	ret, err := router.Get(key)
 
 	if ok := assert.NoError(t, err); !ok {
@@ -99,12 +95,12 @@ func TestRouterGetLocalMiss(t *testing.T) {
 		t.Fatal()
 	}
 
-	key := "abcdef"
+	key := HexToBytes("abcdef")
 	value := "result value"
 	pool := router.pools["local"].(*TestPool)
 	pool.On("Get", key).Return(nil, ErrNotRoutable)
 	pool = router.pools["remote"].(*TestPool)
-	pool.On("Get", key).Return([]byte(crcHeader+value), nil)
+	pool.On("Get", key).Return([]byte(value), nil)
 
 	ret, err := router.Get(key)
 
@@ -136,7 +132,7 @@ func TestRouterGetError(t *testing.T) {
 		t.Fatal()
 	}
 
-	key := "abcdef"
+	key := HexToBytes("abcdef")
 	pool := router.pools["local"].(*TestPool)
 	pool.On("Get", key).Return(nil, ErrNotRoutable)
 	_, err = router.Get(key)
@@ -177,12 +173,12 @@ func TestMerget(t *testing.T) {
 	localPool := localRouter.pools["local"].(*TestPool)
 	remotePool := remoteRouter.pools["remote"].(*TestPool)
 
-	key := "abcdef"
+	key := HexToBytes("abcdef")
 	value := "result value"
 	//The set is expected to be call on localPool with the value retrieved from remote
-	localPool.On("Set", key, []byte(crcHeader+value)).Return(nil)
+	localPool.On("Set", key, []byte(value)).Return(nil)
 	localPool.On("Get", key).Return(nil, ErrNotRoutable)
-	remotePool.On("Get", key).Return([]byte(crcHeader+value), nil)
+	remotePool.On("Get", key).Return([]byte(value), nil)
 
 	localPool.wg.Add(1)
 
@@ -212,7 +208,7 @@ func TestMerget(t *testing.T) {
 		t.Error()
 	}
 	localPool.wg.Wait()
-	if ok := localPool.AssertCalled(t, "Set", key, []byte(crcHeader+value)); !ok {
+	if ok := localPool.AssertCalled(t, "Set", key, []byte(value)); !ok {
 		t.Error()
 	}
 

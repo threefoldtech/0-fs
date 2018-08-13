@@ -12,9 +12,9 @@ import (
 
 	"github.com/golang/snappy"
 	"github.com/stretchr/testify/assert"
-	"github.com/xxtea/xxtea-go/xxtea"
 	"github.com/threefoldtech/0-fs/meta"
 	"github.com/threefoldtech/0-fs/rofs"
+	"github.com/xxtea/xxtea-go/xxtea"
 )
 
 const (
@@ -28,8 +28,8 @@ type TestStorage struct {
 	hash []byte
 }
 
-func (t *TestStorage) Get(key string) (io.ReadCloser, error) {
-	if data, ok := t.data[key]; ok {
+func (t *TestStorage) Get(key []byte) (io.ReadCloser, error) {
+	if data, ok := t.data[string(key)]; ok {
 		return ioutil.NopCloser(bytes.NewBuffer(data)), nil
 	}
 	return nil, fmt.Errorf("not found")
