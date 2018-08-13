@@ -1,3 +1,5 @@
+> IMPORTANT: Due to issues with the fuse library, g8ufs should be built with golang v1.8.*. Newer versions of go will cause unexpected issues
+
 # 0-fs
 
 0-fs is the fuse file system of Zero-OS.
