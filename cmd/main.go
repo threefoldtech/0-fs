@@ -178,7 +178,7 @@ func main() {
 	flag.StringVar(&cmd.MetaDB, "meta", "", "Path to metadata database (optional)")
 	flag.StringVar(&cmd.Backend, "backend", "/tmp/backend", "Working directory of the filesystem (cache and others)")
 	flag.StringVar(&cmd.Cache, "cache", "", "Optional external (common) cache directory, if not provided a temporary cache location will be created under `backend`")
-	flag.StringVar(&cmd.URL, "storage-url", "ardb://hub.gig.tech:16379", "Fallback storage url in case no router.yaml available in flist")
+	flag.StringVar(&cmd.URL, "storage-url", "zdb://hub.grid.tf:9900", "Fallback storage url in case no router.yaml available in flist")
 	flag.StringVar(&cmd.Router, "local-router", "", "Path to local router.yaml to merge with the router.yaml from the flist. This will allow adding some caching layers")
 	flag.BoolVar(&cmd.Debug, "debug", false, "Print debug messages")
 
