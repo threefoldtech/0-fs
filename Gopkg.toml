@@ -39,7 +39,7 @@
 
 [[constraint]]
   name = "github.com/hanwen/go-fuse"
-  version = "20170619.0.0"
+  revision = "95c6370914ac7822973d1893680e878e156f8d70"
 
 [[constraint]]
   name = "github.com/op/go-logging"
