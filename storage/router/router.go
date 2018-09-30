@@ -71,7 +71,7 @@ func (r *Router) get(key []byte) (string, []byte, error) {
 		if err == ErrNotRoutable || err == redis.ErrNil {
 			continue
 		} else if err != nil {
-			log.Errorf("pool(%s, %s) : %s", poolName, key, err)
+			log.Errorf("pool(%s, %x) : %s", poolName, key, err)
 			continue
 		}
 
