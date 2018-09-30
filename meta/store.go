@@ -10,11 +10,10 @@ import (
 	"os/user"
 	"path"
 	"strconv"
-	"time"
 
 	"github.com/codahale/blake2"
+	"github.com/hashicorp/golang-lru"
 	_ "github.com/mattn/go-sqlite3"
-	"github.com/patrickmn/go-cache"
 	np "github.com/threefoldtech/0-fs/cap.np"
 	"zombiezen.com/go/capnproto2"
 )
@@ -35,6 +34,9 @@ const (
 	TraverseLimit = ^uint64(0)
 
 	SQLiteDBName = "flistdb.sqlite3"
+
+	DirCacheSize    = 1024
+	AccessCacheSize = 64
 )
 
 //NewStore creates a new meta store with path p
@@ -50,11 +52,20 @@ func NewStore(p string) (MetaStore, error) {
 		return nil, err
 	}
 
+	cache, err := lru.New(DirCacheSize)
+	if err != nil {
+		return nil, err
+	}
+	aclCache, err := lru.New(AccessCacheSize)
+	if err != nil {
+		return nil, err
+	}
+
 	return &sqlStore{
 		db:    db,
 		stmt:  stmt,
-		cache: cache.New(60*time.Second, 20*time.Second),
-		acl:   cache.New(5*time.Minute, 2*time.Minute),
+		cache: cache,
+		acl:   aclCache,
 
 		users:  make(map[string]int),
 		groups: make(map[string]int),
@@ -65,8 +76,9 @@ type sqlStore struct {
 	stmt *sql.Stmt
 	db   *sql.DB
 
-	cache  *cache.Cache
-	acl    *cache.Cache
+	//cache  *cache.Cache
+	cache  *lru.Cache
+	acl    *lru.Cache
 	users  map[string]int
 	groups map[string]int
 }
@@ -107,7 +119,7 @@ func (s *sqlStore) getACI(key string) (*np.ACI, error) {
 		return nil, err
 	}
 
-	s.acl.Set(key, &aci, cache.DefaultExpiration)
+	s.acl.Add(key, &aci)
 	return &aci, nil
 }
 
@@ -217,7 +229,7 @@ func (s *sqlStore) get(p string) (Meta, error) {
 
 	dir, err := s.getDir(p)
 	if err == nil {
-		s.cache.Set(p, dir, cache.DefaultExpiration)
+		s.cache.Add(p, dir)
 		return dir, nil
 	}
 
@@ -242,8 +254,8 @@ func (s *sqlStore) get(p string) (Meta, error) {
 	for _, child := range parent.Children() {
 		if child.Name() == name {
 			meta = child
+			break
 		}
-		s.cache.Set(path.Join(parentPath, child.Name()), child, cache.DefaultExpiration)
 	}
 
 	if meta != nil {

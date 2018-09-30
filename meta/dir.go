@@ -1,6 +1,8 @@
 package meta
 
 import (
+	"sync"
+
 	np "github.com/threefoldtech/0-fs/cap.np"
 )
 
@@ -9,17 +11,28 @@ type Dir struct {
 	np.Dir
 	store  *sqlStore
 	access Access
+
+	name     string
+	info     MetaInfo
+	children []Meta
+
+	nOnce sync.Once
+	iOnce sync.Once
+	cOnce sync.Once
 }
 
-//ID emtpy string for a dir
+//ID empty string for a dir
 func (d *Dir) ID() string {
 	return ""
 }
 
 //Name return file name
 func (d *Dir) Name() string {
-	name, _ := d.Dir.Name()
-	return name
+	d.nOnce.Do(func() {
+		d.name, _ = d.Dir.Name()
+	})
+
+	return d.name
 }
 
 //IsDir returns true for a dir
@@ -34,17 +47,29 @@ func (d *Dir) Blocks() []BlockInfo {
 
 //Info return meta info for this dir
 func (d *Dir) Info() MetaInfo {
-	return MetaInfo{
-		CreationTime:     d.CreationTime(),
-		ModificationTime: d.ModificationTime(),
-		Size:             4096,
-		Type:             DirType,
-		Access:           d.access,
-	}
+	d.iOnce.Do(func() {
+		d.info = MetaInfo{
+			CreationTime:     d.CreationTime(),
+			ModificationTime: d.ModificationTime(),
+			Size:             4096,
+			Type:             DirType,
+			Access:           d.access,
+		}
+	})
+
+	return d.info
 }
 
-//Children all sub objects
+//Children return items in this dir
 func (d *Dir) Children() []Meta {
+	d.cOnce.Do(func() {
+		d.children = d.getChildren()
+	})
+
+	return d.children
+}
+
+func (d *Dir) getChildren() []Meta {
 	if !d.HasContents() {
 		return nil
 	}

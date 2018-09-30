@@ -14,8 +14,13 @@ type File struct {
 	file   np.File
 	access Access
 
-	blks []BlockInfo
-	o    sync.Once
+	name   string
+	info   MetaInfo
+	blocks []BlockInfo
+
+	nOnce sync.Once
+	iOnce sync.Once
+	bOnce sync.Once
 }
 
 //ID returns file ID
@@ -29,8 +34,11 @@ func (f *File) ID() string {
 
 //Name return file name
 func (f *File) Name() string {
-	name, _ := f.Inode.Name()
-	return name
+	f.nOnce.Do(func() {
+		f.name, _ = f.Inode.Name()
+	})
+
+	return f.name
 }
 
 //IsDir false for files
@@ -45,20 +53,24 @@ func (f *File) Children() []Meta {
 
 //Info return meta info for this dir
 func (f *File) Info() MetaInfo {
-	return MetaInfo{
-		CreationTime:     f.CreationTime(),
-		ModificationTime: f.ModificationTime(),
-		Size:             f.Size(),
-		Type:             RegularType,
-		Access:           f.access,
-		FileBlockSize:    uint64(f.file.BlockSize()) * 4096,
-	}
+	f.iOnce.Do(func() {
+		f.info = MetaInfo{
+			CreationTime:     f.CreationTime(),
+			ModificationTime: f.ModificationTime(),
+			Size:             f.Size(),
+			Type:             RegularType,
+			Access:           f.access,
+			FileBlockSize:    uint64(f.file.BlockSize()) * 4096,
+		}
+	})
+
+	return f.info
 }
 
-func (f *File) blocks() {
+func (f *File) getBlocks() []BlockInfo {
 	var blocks []BlockInfo
 	if !f.file.HasBlocks() {
-		return
+		return blocks
 	}
 
 	cblocks, _ := f.file.Blocks()
@@ -73,11 +85,14 @@ func (f *File) blocks() {
 		})
 	}
 
-	f.blks = blocks
+	return blocks
 }
 
 //Blocks loads and return blocks of file
 func (f *File) Blocks() []BlockInfo {
-	f.o.Do(f.blocks)
-	return f.blks
+	f.bOnce.Do(func() {
+		f.blocks = f.getBlocks()
+	})
+
+	return f.blocks
 }
