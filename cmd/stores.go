@@ -12,6 +12,30 @@ import (
 	"github.com/threefoldtech/0-fs/storage/router"
 )
 
+func getDB(db string) (string, error) {
+	f, err := os.Open(db)
+	if err != nil {
+		return db, err
+	}
+
+	defer f.Close()
+
+	info, err := f.Stat()
+	if err != nil {
+		return db, err
+	}
+
+	if !info.IsDir() {
+		db += ".d"
+		//dbs[i] = db //update the entry in the list
+		if err := unpack(f, db); err != nil {
+			return db, err
+		}
+	}
+
+	return db, nil
+}
+
 func getMetaStore(dbs []string) (meta.MetaStore, error) {
 	var stores []meta.MetaStore
 
@@ -19,23 +43,15 @@ func getMetaStore(dbs []string) (meta.MetaStore, error) {
 		if len(db) == 0 {
 			continue //ignore empty lines in file
 		}
-		f, err := os.Open(db)
+		var err error
+		db, err = getDB(db)
 		if err != nil {
 			return nil, err
-		}
-		info, err := f.Stat()
-		if err != nil {
-			return nil, err
-		}
-		if !info.IsDir() {
-			db += ".d"
-			dbs[i] = db //update the entry in the list
-			if err := unpack(f, db); err != nil {
-				return nil, err
-			}
 		}
 
-		f.Close()
+		//update the entry in the list, in case if the db has been extracted
+		dbs[i] = db
+
 		store, err := meta.NewStore(db)
 		if err != nil {
 			return nil, err
