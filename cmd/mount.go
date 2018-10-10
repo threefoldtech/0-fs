@@ -47,7 +47,7 @@ func reload(fs *g8ufs.G8ufs, cmd *Cmd) error {
 	}
 
 	//rebuild the stores
-	extra := strings.Fields(string(content))
+	extra := strings.Split(string(content), "\n")
 	extraMeta, err := getMetaStore(extra)
 	if err != nil {
 		return err

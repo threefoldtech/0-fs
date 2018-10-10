@@ -16,6 +16,9 @@ func getMetaStore(dbs []string) (meta.MetaStore, error) {
 	var stores []meta.MetaStore
 
 	for i, db := range dbs {
+		if len(db) == 0 {
+			continue //ignore empty lines in file
+		}
 		f, err := os.Open(db)
 		if err != nil {
 			return nil, err
