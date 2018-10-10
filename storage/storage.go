@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"fmt"
 	"io"
 
 	"github.com/op/go-logging"
@@ -26,6 +27,10 @@ var (
 
 //NewSimpleStorage backward compatible storage for a single endpoint
 func NewSimpleStorage(url string) (*router.Router, error) {
+	if len(url) == 0 {
+		return nil, fmt.Errorf("empty storage url")
+	}
+
 	config := router.Config{
 		Pools: map[string]router.PoolConfig{
 			"simple": {

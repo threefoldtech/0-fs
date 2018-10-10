@@ -268,7 +268,6 @@ func (s *sqlStore) get(p string) (Meta, error) {
 func (s *sqlStore) Get(path string) (Meta, bool) {
 	meta, err := s.get(path)
 	if err != nil {
-		log.Debugf("cannot resolve %s: %s", path, err)
 		return nil, false
 	}
 	return meta, true

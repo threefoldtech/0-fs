@@ -20,19 +20,45 @@ var (
 	log = logging.MustGetLogger("rofs")
 )
 
-type filesystem struct {
-	pathfs.FileSystem
-	cache   string
+// Config represents a filesystem configuration object
+// Configuration objects can be used to manipulate some filesystem flags in runtime
+type Config struct {
 	store   meta.MetaStore
 	storage storage.Storage
+	cache   string
 }
 
-func New(storage storage.Storage, store meta.MetaStore, cache string) pathfs.FileSystem {
+//SetMetaStore sets the filesystem meta store in runtime.
+func (c *Config) SetMetaStore(store meta.MetaStore) {
+	//TODO: should this be done atomically in a way that is synched ?
+	c.store = store
+}
+
+//SetDataStorage sets the filesystem data storage in runtime
+func (c *Config) SetDataStorage(storage storage.Storage) {
+	//TODO: should this be done atomically in a way that is synched ?
+	c.storage = storage
+}
+
+type filesystem struct {
+	pathfs.FileSystem
+	*Config
+}
+
+//NewConfig creates a new filesystem config object with given meta store, and data storage and local cache directory
+func NewConfig(storage storage.Storage, store meta.MetaStore, cache string) *Config {
+	return &Config{
+		store:   store,
+		storage: storage,
+		cache:   cache,
+	}
+}
+
+//New creates a new filesystem object with given configuration
+func New(cfg *Config) pathfs.FileSystem {
 	fs := &filesystem{
 		FileSystem: pathfs.NewDefaultFileSystem(),
-		storage:    storage,
-		store:      store,
-		cache:      cache,
+		Config:     cfg,
 	}
 
 	return pathfs.NewReadonlyFileSystem(fs)

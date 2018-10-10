@@ -1,10 +1,11 @@
 package rofs
 
 import (
-	"github.com/threefoldtech/0-fs/meta"
 	"os"
 	"path"
 	"syscall"
+
+	"github.com/threefoldtech/0-fs/meta"
 )
 
 func (fs *filesystem) path(hash string) string {

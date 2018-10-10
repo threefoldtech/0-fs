@@ -125,7 +125,7 @@ func NewConfig(in io.Reader) (*Config, error) {
 func NewConfigFromFile(name string) (*Config, error) {
 	file, err := os.Open(name)
 	if err != nil {
-		return nil, errors.Wrap(err, name)
+		return nil, err
 	}
 
 	defer file.Close()
