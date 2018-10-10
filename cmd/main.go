@@ -3,15 +3,14 @@ package main
 import (
 	"archive/tar"
 	"compress/gzip"
-	"flag"
 	"fmt"
 	"io"
 	"os"
 	"path"
 
+	"github.com/codegangsta/cli"
 	"github.com/op/go-logging"
 	"github.com/threefoldtech/0-fs"
-	"github.com/threefoldtech/0-fs/meta"
 	"github.com/threefoldtech/0-fs/storage"
 	"github.com/threefoldtech/0-fs/storage/router"
 )
@@ -19,7 +18,7 @@ import (
 var log = logging.MustGetLogger("main")
 
 type Cmd struct {
-	MetaDB  string
+	Meta    []string
 	Backend string
 	Cache   string
 	URL     string
@@ -55,77 +54,50 @@ func mount(cmd *Cmd, target string) error {
 	// Test if the meta path is a directory
 	// if not, it's maybe a flist/tar.gz
 
-	var metaStore meta.MetaStore
-	if len(cmd.MetaDB) != 0 {
-		f, err := os.Open(cmd.MetaDB)
-		if err != nil {
-			return err
-		}
-		info, err := f.Stat()
-		if err != nil {
-			return err
-		}
-		if !info.IsDir() {
-			err = unpack(f, cmd.MetaDB+".d")
-			if err != nil {
-				log.Errorf("%s", err)
-			} else {
-				cmd.MetaDB = cmd.MetaDB + ".d"
-			}
-		}
-
-		f.Close()
-
-		metaStore, err = meta.NewStore(cmd.MetaDB)
-		if err != nil {
-			return fmt.Errorf("failed to initialize meta store: %s", err)
-		}
-	}
-
-	var store *router.Router
-	var err error
-	router := path.Join(cmd.MetaDB, "router.yaml")
-	if file, e := os.Open(router); e == nil {
-		log.Debugf("loading router config from: %s", router)
-		store, err = storage.NewStorage(file)
-		file.Close()
-	} else if os.IsNotExist(e) {
-		log.Debugf("no router config in meta, fallback to storage-url")
-		store, err = storage.NewSimpleStorage(cmd.URL)
-	} else {
-		return e
-	}
-
+	metaStore, err := getMetaStore(cmd.Meta)
 	if err != nil {
 		return err
 	}
 
-	store, err = layerLocalStore(cmd.Router, store)
+	var dataStore *router.Router
+	if len(cmd.URL) != 0 {
+		//prepare the fallback storage
+		dataStore, err = storage.NewSimpleStorage(cmd.URL)
+		if err != nil {
+			return err
+		}
+	}
+
+	//get a merged datastore from all flists
+	dataStore, err = getDataStore(cmd.Meta, dataStore)
 	if err != nil {
 		return err
 	}
 
-	log.Debug("router\n", store)
+	//finally merge with local router.yaml
+	dataStore, err = layerLocalStore(cmd.Router, dataStore)
+	if err != nil {
+		return err
+	}
+
+	log.Debug("router\n", dataStore)
 
 	fs, err := g8ufs.Mount(&g8ufs.Options{
 		MetaStore: metaStore,
 		Backend:   cmd.Backend,
 		Cache:     cmd.Cache,
 		Target:    target,
-		Storage:   store,
+		Storage:   dataStore,
 		Reset:     cmd.Reset,
 	})
 
 	if err != nil {
 		return err
 	}
-	fmt.Println("mount starts")
-	if err := fs.Wait(); err != nil {
-		fmt.Fprintf(os.Stderr, "exit with error: %s", err)
-		os.Exit(1)
-	}
 
-	return nil
+	fmt.Println("mount starts")
+
+	return fs.Wait()
 }
 
 // unpack decrompress and unpackt a tgz archive from r to dest folder
@@ -170,48 +142,83 @@ func unpack(r io.Reader, dest string) error {
 	return err
 }
 
+func action(ctx *cli.Context) error {
+	args := ctx.Args()
+	if len(args) != 1 {
+		return fmt.Errorf("expecting a single mount point argument")
+	}
+
+	cmd := Cmd{
+		Meta:    ctx.GlobalStringSlice("meta"),
+		Backend: ctx.GlobalString("backend"),
+		Cache:   ctx.GlobalString("cache"),
+		URL:     ctx.GlobalString("storage-url"),
+		Router:  ctx.GlobalString("local-router"),
+		Reset:   ctx.GlobalBool("reset"),
+	}
+
+	return mount(&cmd, args.First())
+}
+
 func main() {
-	var cmd Cmd
-	var version bool
-	flag.BoolVar(&version, "version", false, "Print version and exit")
-	flag.BoolVar(&cmd.Reset, "reset", false, "Reset filesystem on mount")
-	flag.StringVar(&cmd.MetaDB, "meta", "", "Path to metadata database (optional)")
-	flag.StringVar(&cmd.Backend, "backend", "/tmp/backend", "Working directory of the filesystem (cache and others)")
-	flag.StringVar(&cmd.Cache, "cache", "", "Optional external (common) cache directory, if not provided a temporary cache location will be created under `backend`")
-	flag.StringVar(&cmd.URL, "storage-url", "zdb://hub.grid.tf:9900", "Fallback storage url in case no router.yaml available in flist")
-	flag.StringVar(&cmd.Router, "local-router", "", "Path to local router.yaml to merge with the router.yaml from the flist. This will allow adding some caching layers")
-	flag.BoolVar(&cmd.Debug, "debug", false, "Print debug messages")
+	app := cli.App{
+		Name:      "0-fs",
+		Usage:     "start a zero-fs instance by mounting one or more flists into mount target",
+		UsageText: "0-fs [options] <mount-target>",
+		Version:   g8ufs.Version().String(),
+		Flags: []cli.Flag{
+			cli.BoolFlag{
+				Name:  "reset",
+				Usage: "resets filesystem on mount",
+			},
+			cli.BoolFlag{
+				Name:  "debug",
+				Usage: "enable debug logging",
+			},
+			cli.StringSliceFlag{
+				Name:  "meta",
+				Usage: "path to meta backend, can appear many times. The meta is layered in order so last meta to be added will be on top",
+			},
+			cli.StringFlag{
+				Name:  "backend",
+				Value: "/tmp/backend",
+				Usage: "working directory of the filesystem (cache and others)",
+			},
+			cli.StringFlag{
+				Name:  "cache",
+				Usage: "external (common) cache directory, if not provided a temporary cache location will be created under `backend`",
+			},
+			cli.StringFlag{
+				Name:  "storage-url",
+				Value: "zdb://hub.grid.tf:9900",
+				Usage: "fallback storage url in case no router.yaml available in flist",
+			},
+			cli.StringFlag{
+				Name:  "local-router",
+				Usage: "path to local router.yaml to merge with the router.yaml from the flist. This will allow adding some caching layers",
+			},
+		},
+		Before: func(ctx *cli.Context) error {
+			if ctx.GlobalBool("version") {
+				fmt.Println(g8ufs.Version())
+				os.Exit(0)
+			}
 
-	flag.Parse()
+			formatter := logging.MustStringFormatter("%{time}: %{color}%{module} %{level:.1s} > %{message} %{color:reset}")
+			logging.SetFormatter(formatter)
 
-	if version {
-		fmt.Println(g8ufs.Version())
-		os.Exit(0)
+			if ctx.GlobalBool("debug") {
+				logging.SetLevel(logging.DEBUG, "")
+			} else {
+				logging.SetLevel(logging.INFO, "")
+			}
+
+			return nil
+		},
+		Action: action,
 	}
 
-	if flag.NArg() != 1 {
-		fmt.Fprintf(os.Stderr, "Missing mount point argument\n")
-		os.Exit(1)
-	}
-
-	formatter := logging.MustStringFormatter("%{time}: %{color}%{module} %{level:.1s} > %{message} %{color:reset}")
-	logging.SetFormatter(formatter)
-
-	if cmd.Debug {
-		logging.SetLevel(logging.DEBUG, "")
-	} else {
-		logging.SetLevel(logging.INFO, "")
-	}
-
-	if errs := cmd.Validate(); errs != nil {
-		for _, err := range errs {
-			fmt.Fprintf(os.Stderr, "%s\n", err)
-		}
-		os.Exit(1)
-	}
-
-	if err := mount(&cmd, flag.Arg(0)); err != nil {
-		fmt.Fprintf(os.Stderr, "%s\n", err)
-		os.Exit(1)
+	if err := app.Run(os.Args); err != nil {
+		log.Fatal(err)
 	}
 }

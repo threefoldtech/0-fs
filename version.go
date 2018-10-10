@@ -16,7 +16,7 @@ var (
 type version struct{}
 
 func (v *version) String() string {
-	s := fmt.Sprintf("Version: %s @Revision: %s", Branch, Revision)
+	s := fmt.Sprintf("'%s' @Revision: %s", Branch, Revision)
 	if Dirty != "" {
 		s += " (dirty-repo)"
 	}

@@ -135,6 +135,11 @@ func Merge(routers ...*Router) *Router {
 	}
 
 	for i, router := range routers {
+		if router == nil {
+			//support merging a nil router
+			continue
+		}
+
 		for name, pool := range router.pools {
 			name = fmt.Sprintf("%d.%s", i, name)
 			merged.pools[name] = pool
