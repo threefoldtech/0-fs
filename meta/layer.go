@@ -83,6 +83,10 @@ func Layered(store ...MetaStore) MetaStore {
 	var s stores
 	//reverse order
 	for i := len(store) - 1; i >= 0; i-- {
+		if store[i] == nil {
+			continue
+		}
+
 		s = append(s, store[i])
 	}
 	return s

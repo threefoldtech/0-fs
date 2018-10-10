@@ -2,9 +2,14 @@ package main
 
 import (
 	"fmt"
+	"io/ioutil"
 	"os"
 	"os/signal"
+	"path"
+	"strings"
 	"syscall"
+
+	"github.com/threefoldtech/0-fs/meta"
 
 	g8ufs "github.com/threefoldtech/0-fs"
 )
@@ -32,10 +37,31 @@ func start(cmd *Cmd, target string) (*g8ufs.G8ufs, error) {
 }
 
 func reload(fs *g8ufs.G8ufs, cmd *Cmd) error {
-	// metaStore, dataStore, err := getStoresFromCmd(cmd)
-	// if err != nil {
-	// 	return err
-	// }
+	log.Info("reload flists")
+	//load extra fslist from external file /backend/.layered
+	content, err := ioutil.ReadFile(path.Join(cmd.Backend, ".layered"))
+	if os.IsNotExist(err) {
+		return nil //nothing to do
+	} else if err != nil {
+		return err
+	}
+
+	//rebuild the stores
+	extra := strings.Fields(string(content))
+	extraMeta, err := getMetaStore(extra)
+	if err != nil {
+		return err
+	}
+
+	// - first use the ones passed via command line
+	metaStore, _, err := getStoresFromCmd(cmd)
+	if err != nil {
+		return err
+	}
+
+	// - then add the extra on top
+	metaStore = meta.Layered(metaStore, extraMeta)
+	fs.SetMetaStore(metaStore)
 
 	return nil
 }
@@ -70,7 +96,9 @@ func mount(cmd *Cmd, target string) error {
 				return nil
 			}
 
-			//SIGHUP reload store
+			if err := reload(fs, cmd); err != nil {
+				log.Errorf("failed to reload flists: %s", err)
+			}
 		}
 	}
 }
