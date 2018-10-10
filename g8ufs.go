@@ -47,9 +47,9 @@ type Options struct {
 }
 
 type G8ufs struct {
+	*rofs.Config
 	target string
 	fuse   string
-	server *fuse.Server
 }
 
 //Mount mounts fuse with given options, it blocks forever until unmount is called on the given mount point
@@ -74,9 +74,10 @@ func Mount(opt *Options) (*G8ufs, error) {
 		os.MkdirAll(name, 0755)
 	}
 
+	cfg := rofs.NewConfig(opt.Storage, opt.MetaStore, ca)
 	var server *fuse.Server
 	if opt.MetaStore != nil {
-		fs := rofs.New(opt.Storage, opt.MetaStore, ca)
+		fs := rofs.New(cfg)
 		var err error
 		server, err = fuse.NewServer(
 			nodefs.NewFileSystemConnector(
@@ -136,8 +137,8 @@ func Mount(opt *Options) (*G8ufs, error) {
 	}
 
 	return &G8ufs{
+		Config: cfg,
 		target: opt.Target,
-		server: server,
 		fuse:   ro,
 	}, nil
 }
@@ -183,9 +184,10 @@ func (fs *G8ufs) Unmount() error {
 	return errs
 }
 
-//IsMount checks if path is a mounpoint
+//IsMount checks if path is a mountpoint
 func IsMount(path string) bool {
 	//TODO: use a better approach to check if a mount point
+	//TODO: inotify ?
 	cmd := exec.Command("mountpoint", "-q", path)
 	if err := cmd.Run(); err != nil {
 		return false

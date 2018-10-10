@@ -1,11 +1,21 @@
 package meta
 
-import np "github.com/threefoldtech/0-fs/cap.np"
+import (
+	"sync"
+
+	np "github.com/threefoldtech/0-fs/cap.np"
+)
 
 type Link struct {
 	np.Inode
 	link   np.Link
 	access Access
+
+	name string
+	info MetaInfo
+
+	nOnce sync.Once
+	iOnce sync.Once
 }
 
 //ID link id
@@ -15,8 +25,11 @@ func (l *Link) ID() string {
 
 //Name link name
 func (l *Link) Name() string {
-	name, _ := l.Inode.Name()
-	return name
+	l.nOnce.Do(func() {
+		l.name, _ = l.Inode.Name()
+	})
+
+	return l.name
 }
 
 //IsDir returns false
@@ -34,15 +47,19 @@ func (l *Link) Children() []Meta {
 	return nil
 }
 
-//Info returns emtpty list
+//Info returns empty list
 func (l *Link) Info() MetaInfo {
-	target, _ := l.link.Target()
-	return MetaInfo{
-		CreationTime:     l.CreationTime(),
-		ModificationTime: l.ModificationTime(),
-		Size:             l.Size(),
-		Type:             LinkType,
-		Access:           l.access,
-		LinkTarget:       target,
-	}
+	l.iOnce.Do(func() {
+		target, _ := l.link.Target()
+		l.info = MetaInfo{
+			CreationTime:     l.CreationTime(),
+			ModificationTime: l.ModificationTime(),
+			Size:             l.Size(),
+			Type:             LinkType,
+			Access:           l.access,
+			LinkTarget:       target,
+		}
+	})
+
+	return l.info
 }

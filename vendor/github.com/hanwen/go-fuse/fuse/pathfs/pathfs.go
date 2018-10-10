@@ -541,10 +541,17 @@ func (n *pathInode) Open(flags uint32, context *fuse.Context) (file nodefs.File,
 	return
 }
 
-func (n *pathInode) Lookup(out *fuse.Attr, name string, context *fuse.Context) (node *nodefs.Inode, code fuse.Status) {
+func (n *pathInode) Lookup(out *fuse.Attr, name string, context *fuse.Context) (*nodefs.Inode, fuse.Status) {
 	fullPath := filepath.Join(n.GetPath(), name)
 	fi, code := n.fs.GetAttr(fullPath, context)
-	if code.Ok() {
+	node := n.Inode().GetChild(name)
+
+	if node != nil && (!code.Ok() || node.IsDir() != fi.IsDir()) {
+		n.Inode().RmChild(name)
+		node = nil
+	}
+
+	if code.Ok() && node == nil {
 		node = n.findChild(fi, name, fullPath).Inode()
 		*out = *fi
 	}
@@ -744,4 +751,25 @@ func (n *pathInode) Write(file nodefs.File, data []byte, off int64, context *fus
 		return file.Write(data, off)
 	}
 	return 0, fuse.ENOSYS
+}
+
+func (n *pathInode) GetLk(file nodefs.File, owner uint64, lk *fuse.FileLock, flags uint32, out *fuse.FileLock, context *fuse.Context) (code fuse.Status) {
+	if file != nil {
+		return file.GetLk(owner, lk, flags, out)
+	}
+	return fuse.ENOSYS
+}
+
+func (n *pathInode) SetLk(file nodefs.File, owner uint64, lk *fuse.FileLock, flags uint32, context *fuse.Context) (code fuse.Status) {
+	if file != nil {
+		return file.SetLk(owner, lk, flags)
+	}
+	return fuse.ENOSYS
+}
+
+func (n *pathInode) SetLkw(file nodefs.File, owner uint64, lk *fuse.FileLock, flags uint32, context *fuse.Context) (code fuse.Status) {
+	if file != nil {
+		return file.SetLkw(owner, lk, flags)
+	}
+	return fuse.ENOSYS
 }

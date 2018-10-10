@@ -1,11 +1,21 @@
 package meta
 
-import np "github.com/threefoldtech/0-fs/cap.np"
+import (
+	"sync"
+
+	np "github.com/threefoldtech/0-fs/cap.np"
+)
 
 type Special struct {
 	np.Inode
 	special np.Special
 	access  Access
+
+	name string
+	info MetaInfo
+
+	nOnce sync.Once
+	iOnce sync.Once
 }
 
 //ID link id
@@ -15,8 +25,11 @@ func (s *Special) ID() string {
 
 //Name link name
 func (s *Special) Name() string {
-	name, _ := s.Inode.Name()
-	return name
+	s.nOnce.Do(func() {
+		s.name, _ = s.Inode.Name()
+	})
+
+	return s.name
 }
 
 //IsDir returns false
@@ -34,8 +47,16 @@ func (s *Special) Children() []Meta {
 	return nil
 }
 
-//Info returns emtpty list
+//Info returns empty list
 func (s *Special) Info() MetaInfo {
+	s.iOnce.Do(func() {
+		s.info = s.getInfo()
+	})
+
+	return s.info
+}
+
+func (s *Special) getInfo() MetaInfo {
 	t := UnknownType
 	switch s.special.Type() {
 	case np.Special_Type_socket:
