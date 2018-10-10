@@ -38,7 +38,7 @@ func start(cmd *Cmd, target string) (*g8ufs.G8ufs, error) {
 
 func reload(fs *g8ufs.G8ufs, cmd *Cmd) error {
 	log.Info("reload flists")
-	//load extra fslist from external file /backend/.layered
+	//load extra flist from external file /backend/.layered
 	content, err := ioutil.ReadFile(path.Join(cmd.Backend, ".layered"))
 	if os.IsNotExist(err) {
 		return nil //nothing to do
