@@ -85,8 +85,13 @@ func (p *ScanPool) newPool(d Destination) *redis.Pool {
 			return redis.Dial("tcp", d.Host, opts...)
 		},
 		TestOnBorrow: func(c redis.Conn, t time.Time) error {
-			_, err := c.Do("PING")
-			return err
+			if time.Since(t) > 10*time.Second {
+				//only check connection if more than 10 second of inactivity
+				_, err := c.Do("PING")
+				return err
+			}
+
+			return nil
 		},
 		MaxActive:   10,
 		IdleTimeout: 1 * time.Minute,
