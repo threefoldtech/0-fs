@@ -76,7 +76,10 @@ func (p *ScanPool) Routes(h []byte) []Destination {
 func (p *ScanPool) newPool(d Destination) *redis.Pool {
 	return &redis.Pool{
 		Dial: func() (redis.Conn, error) {
-			var opts []redis.DialOption
+			opts := []redis.DialOption{
+				redis.DialNetDial(dial),
+			}
+
 			if d.User != nil {
 				//assume ardb://password@host.com:port/
 				opts = append(opts, redis.DialPassword(d.User.Username()))
