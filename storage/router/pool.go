@@ -9,6 +9,10 @@ import (
 	"github.com/garyburd/redigo/redis"
 )
 
+const (
+	blockGetRetries = 3
+)
+
 //Pool defines a pool interface
 type Pool interface {
 	Range
@@ -123,8 +127,19 @@ func (p *ScanPool) getPool(d Destination) (*redis.Pool, error) {
 func (p *ScanPool) get(pool *redis.Pool, key []byte) ([]byte, error) {
 	con := pool.Get()
 	defer con.Close()
+	trial := 1
+	var err error
+	var bytes []byte
+	for trial <= blockGetRetries {
+		log.Debugf("try %x: trial %d/%d", key, trial, blockGetRetries)
+		bytes, err = redis.Bytes(con.Do("GET", key))
+		if err == nil || err == redis.ErrNil {
+			return bytes, err
+		}
+		trial++
+	}
 
-	return redis.Bytes(con.Do("GET", key))
+	return bytes, err
 }
 
 //Get key from pool
@@ -143,7 +158,7 @@ func (p *ScanPool) Get(key []byte) ([]byte, error) {
 		data, err := p.get(pool, key)
 		if err != nil {
 			if err != redis.ErrNil {
-				log.Errorf("destination(%s://%s, %s): %s", dest.Scheme, dest.Host, key, err)
+				log.Errorf("destination(%s://%s, %x): %s", dest.Scheme, dest.Host, key, err)
 			}
 
 			continue
