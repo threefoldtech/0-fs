@@ -47,5 +47,7 @@ func dial(network, address string) (net.Conn, error) {
 
 	i := rand.Intn(len(ips))
 
+	log.Debugf("dialling %s:%s", ips[i], parts[1])
+
 	return net.Dial(network, fmt.Sprintf("%s:%s", ips[i], parts[1]))
 }

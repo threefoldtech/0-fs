@@ -98,6 +98,8 @@ func (d *Downloader) Download(output *os.File) error {
 		})
 	}
 
+	log.Debugf("downloading %d blocks", len(d.Blocks))
+
 	//feed the workers
 	group.Go(func() error {
 		defer close(feed)
@@ -117,7 +119,9 @@ func (d *Downloader) Download(output *os.File) error {
 		close(results)
 	}()
 
+	count := 1
 	for result := range results {
+		log.Debugf("writing block %d/%d of %s", count, len(d.Blocks), output.Name())
 		if _, err := output.Seek(int64(result.Index)*int64(d.BlockSize), os.SEEK_SET); err != nil {
 			return err
 		}
@@ -125,6 +129,8 @@ func (d *Downloader) Download(output *os.File) error {
 		if _, err := output.Write(result.Raw); err != nil {
 			return err
 		}
+
+		count++
 	}
 
 	return group.Wait()

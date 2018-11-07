@@ -127,6 +127,7 @@ func (p *ScanPool) getPool(d Destination) (*redis.Pool, error) {
 func (p *ScanPool) get(pool *redis.Pool, key []byte) ([]byte, error) {
 	con := pool.Get()
 	defer con.Close()
+
 	trial := 1
 	var err error
 	var bytes []byte
@@ -134,8 +135,10 @@ func (p *ScanPool) get(pool *redis.Pool, key []byte) ([]byte, error) {
 		log.Debugf("try %x: trial %d/%d", key, trial, blockGetRetries)
 		bytes, err = redis.Bytes(con.Do("GET", key))
 		if err == nil || err == redis.ErrNil {
+			log.Debugf("block '%x' has been downloaded successfully", key)
 			return bytes, err
 		}
+		log.Errorf("block '%x' downloading failed with error: %s", key, err)
 		trial++
 	}
 
