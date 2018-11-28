@@ -95,12 +95,6 @@ func main() {
 			formatter := logging.MustStringFormatter("%{time}: %{color}%{module} %{level:.1s} > %{message} %{color:reset}")
 			logging.SetFormatter(formatter)
 
-			if ctx.GlobalBool("debug") {
-				logging.SetLevel(logging.DEBUG, "")
-			} else {
-				logging.SetLevel(logging.INFO, "")
-			}
-
 			if log := ctx.GlobalString("log"); len(log) != 0 {
 				file, err := os.Create(log)
 				if err != nil {
@@ -110,6 +104,11 @@ func main() {
 				logging.SetBackend(logging.NewLogBackend(file, "", 0))
 			}
 
+			if ctx.GlobalBool("debug") {
+				logging.SetLevel(logging.DEBUG, "")
+			} else {
+				logging.SetLevel(logging.INFO, "")
+			}
 			return nil
 		},
 		Action: action,
