@@ -80,7 +80,12 @@ func main() {
 				Name:  "local-router",
 				Usage: "path to local router.yaml to merge with the router.yaml from the flist. This will allow adding some caching layers",
 			},
+			cli.StringFlag{
+				Name:  "log",
+				Usage: "write logs to file (default to stdout)",
+			},
 		},
+
 		Before: func(ctx *cli.Context) error {
 			if ctx.GlobalBool("version") {
 				fmt.Println(g8ufs.Version())
@@ -94,6 +99,15 @@ func main() {
 				logging.SetLevel(logging.DEBUG, "")
 			} else {
 				logging.SetLevel(logging.INFO, "")
+			}
+
+			if log := ctx.GlobalString("log"); len(log) != 0 {
+				file, err := os.Create(log)
+				if err != nil {
+					return err
+				}
+
+				logging.SetBackend(logging.NewLogBackend(file, "", 0))
 			}
 
 			return nil
