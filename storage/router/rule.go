@@ -5,6 +5,7 @@ import (
 )
 
 var (
+	//SupportedScheme list of supported url scheme
 	SupportedScheme = []string{
 		"ardb", "zdb", "redis",
 	}
