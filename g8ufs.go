@@ -52,7 +52,6 @@ type G8ufs struct {
 	*rofs.Config
 	target string
 	fuse   string
-
 	w sync.WaitGroup
 }
 
