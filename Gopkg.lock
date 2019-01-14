@@ -2,12 +2,6 @@
 
 
 [[projects]]
-  branch = "master"
-  name = "github.com/codahale/blake2"
-  packages = ["."]
-  revision = "8d10d0420cbfbdc9c1164c0c4ad3457a6c3771b9"
-
-[[projects]]
   name = "github.com/codegangsta/cli"
   packages = ["."]
   revision = "cfb38830724cc34fedffe9a2a29fb54fa9169cd1"
@@ -101,6 +95,12 @@
 
 [[projects]]
   branch = "master"
+  name = "golang.org/x/crypto"
+  packages = ["blake2b"]
+  revision = "ff983b9c42bc9fbf91556e191cc8efb585c16908"
+
+[[projects]]
+  branch = "master"
   name = "golang.org/x/net"
   packages = ["context"]
   revision = "161cd47e91fd58ac17490ef4d742dc98bb4cf60e"
@@ -114,7 +114,10 @@
 [[projects]]
   branch = "master"
   name = "golang.org/x/sys"
-  packages = ["unix"]
+  packages = [
+    "cpu",
+    "unix"
+  ]
   revision = "d0be0721c37eeb5299f245a996a483160fc36940"
 
 [[projects]]
@@ -140,6 +143,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "caf11785d8e4a26248580a1e5507f0ef7284037ff11a039290f27b9fdcd7b0b5"
+  inputs-digest = "7d7ce0c66504ff44efa9b13655d3b7092e142b084a95b8fab2fee5a94d222731"
   solver-name = "gps-cdcl"
   solver-version = 1

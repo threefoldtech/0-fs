@@ -1,6 +1,7 @@
 package rofs
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"io/ioutil"
@@ -11,6 +12,7 @@ import (
 	"github.com/threefoldtech/0-fs/meta"
 	"github.com/threefoldtech/0-fs/storage"
 	"github.com/xxtea/xxtea-go/xxtea"
+	"golang.org/x/crypto/blake2b"
 
 	"golang.org/x/sync/errgroup"
 )
@@ -46,7 +48,26 @@ func (d *Downloader) DownloadBlock(block meta.BlockInfo) ([]byte, error) {
 		return nil, err
 	}
 
-	return snappy.Decode(nil, xxtea.Decrypt(data, block.Decipher))
+	data, err = snappy.Decode(nil, xxtea.Decrypt(data, block.Decipher))
+	if err != nil {
+		return nil, err
+	}
+
+	hasher, err := blake2b.New(16, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	if _, err := hasher.Write(data); err != nil {
+		return nil, err
+	}
+
+	hash := hasher.Sum(nil)
+	if bytes.Compare(hash, block.Decipher) != 0 {
+		return nil, fmt.Errorf("block key(%x), cypher(%x) hash is wrong hash(%x)", block.Key, block.Decipher, hash)
+	}
+
+	return data, nil
 }
 
 func (d *Downloader) worker(ctx context.Context, feed <-chan int, out chan<- *OutputBlock) error {
