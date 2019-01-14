@@ -169,3 +169,20 @@ func TestDownloadSingle(t *testing.T) {
 		t.Error("wrong hash")
 	}
 }
+
+func BenchmarkBlak2B128(b *testing.B) {
+	buf := make([]byte, 1024)
+	if _, err := rand.Read(buf); err != nil {
+		b.Fatal(err)
+	}
+
+	for i := 0; i < b.N; i++ {
+		hasher, _ := blake2b.New(16, nil)
+		_, err := hasher.Write(buf)
+		if err != nil {
+			b.Fatal(err)
+		}
+
+		hasher.Sum(nil)
+	}
+}
