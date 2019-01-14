@@ -11,10 +11,10 @@ import (
 	"path"
 	"strconv"
 
-	"github.com/codahale/blake2"
 	"github.com/hashicorp/golang-lru"
 	_ "github.com/mattn/go-sqlite3"
 	np "github.com/threefoldtech/0-fs/cap.np"
+	"golang.org/x/crypto/blake2b"
 	"zombiezen.com/go/capnproto2"
 )
 
@@ -84,12 +84,10 @@ type sqlStore struct {
 }
 
 func (s *sqlStore) hash(path string) string {
-	bl2b := blake2.New(&blake2.Config{
-		Size: 16,
-	})
-	io.WriteString(bl2b, path)
+	hasher, _ := blake2b.New(16, nil)
+	io.WriteString(hasher, path)
 
-	return fmt.Sprintf("%x", bl2b.Sum(nil))
+	return fmt.Sprintf("%x", hasher.Sum(nil))
 }
 
 //getACI gets aci object with key from db

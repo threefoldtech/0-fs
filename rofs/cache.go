@@ -42,6 +42,7 @@ func (fs *filesystem) checkAndGet(m meta.Meta) (*os.File, error) {
 		return nil, err
 	}
 
+	f.Sync()
 	f.Seek(0, os.SEEK_SET)
 	return f, nil
 }
