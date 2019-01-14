@@ -10,6 +10,8 @@ import (
 	"os"
 	"testing"
 
+	"golang.org/x/crypto/blake2b"
+
 	"github.com/golang/snappy"
 	"github.com/stretchr/testify/assert"
 	"github.com/threefoldtech/0-fs/meta"
@@ -47,17 +49,20 @@ func MakeStorage(chunks int) (*TestStorage, []meta.BlockInfo) {
 		buf := make([]byte, ChunkSize)
 		rand.Read(buf)
 		hash.Write(buf)
+		hasher, _ := blake2b.New(16, nil)
+		hasher.Write(buf)
+		decipher := hasher.Sum(nil)
 
 		key := fmt.Sprintf("block-%d", i)
 
 		block := meta.BlockInfo{
 			Key:      []byte(key),
-			Decipher: []byte(Decipher),
+			Decipher: decipher,
 		}
 
 		blocks = append(blocks, block)
 
-		s.data[key] = xxtea.Encrypt(snappy.Encode(nil, buf), block.Decipher)
+		s.data[key] = xxtea.Encrypt(snappy.Encode(nil, buf), decipher)
 	}
 
 	s.hash = hash.Sum(nil)
