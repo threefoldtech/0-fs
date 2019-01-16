@@ -10,6 +10,8 @@ import (
 	"os"
 	"testing"
 
+	"golang.org/x/crypto/blake2b"
+
 	"github.com/golang/snappy"
 	"github.com/stretchr/testify/assert"
 	"github.com/threefoldtech/0-fs/meta"
@@ -47,17 +49,20 @@ func MakeStorage(chunks int) (*TestStorage, []meta.BlockInfo) {
 		buf := make([]byte, ChunkSize)
 		rand.Read(buf)
 		hash.Write(buf)
+		hasher, _ := blake2b.New(16, nil)
+		hasher.Write(buf)
+		decipher := hasher.Sum(nil)
 
 		key := fmt.Sprintf("block-%d", i)
 
 		block := meta.BlockInfo{
 			Key:      []byte(key),
-			Decipher: []byte(Decipher),
+			Decipher: decipher,
 		}
 
 		blocks = append(blocks, block)
 
-		s.data[key] = xxtea.Encrypt(snappy.Encode(nil, buf), block.Decipher)
+		s.data[key] = xxtea.Encrypt(snappy.Encode(nil, buf), decipher)
 	}
 
 	s.hash = hash.Sum(nil)
@@ -162,5 +167,22 @@ func TestDownloadSingle(t *testing.T) {
 
 	if ok := assert.Equal(t, storage.hash, hash.Sum(nil)); !ok {
 		t.Error("wrong hash")
+	}
+}
+
+func BenchmarkBlak2B128(b *testing.B) {
+	buf := make([]byte, 1024)
+	if _, err := rand.Read(buf); err != nil {
+		b.Fatal(err)
+	}
+
+	for i := 0; i < b.N; i++ {
+		hasher, _ := blake2b.New(16, nil)
+		_, err := hasher.Write(buf)
+		if err != nil {
+			b.Fatal(err)
+		}
+
+		hasher.Sum(nil)
 	}
 }
