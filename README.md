@@ -52,3 +52,6 @@ Usage of ./g8ufs:
 All documentation is in the [`/docs`](./docs) directory, including a [table of contents](/docs/SUMMARY.md).
 
 In [Getting Started with 0-fs](/docs/gettingstarted/README.md) you find the recommended path to quickly get up and running.
+
+# Owner
+[muhamadazmy](https://github.com/muhamadazmy)
