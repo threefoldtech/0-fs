@@ -52,7 +52,7 @@ type G8ufs struct {
 	*rofs.Config
 	target string
 	fuse   string
-	w sync.WaitGroup
+	w      sync.WaitGroup
 }
 
 //Mount mounts fuse with given options, it blocks forever until unmount is called on the given mount point
