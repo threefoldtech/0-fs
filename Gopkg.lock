@@ -2,131 +2,184 @@
 
 
 [[projects]]
+  digest = "1:b24d38b282bacf9791408a080f606370efa3d364e4b5fd9ba0f7b87786d3b679"
   name = "github.com/codegangsta/cli"
   packages = ["."]
+  pruneopts = "UT"
   revision = "cfb38830724cc34fedffe9a2a29fb54fa9169cd1"
   version = "v1.20.0"
 
 [[projects]]
+  digest = "1:ffe9824d294da03b391f44e1ae8281281b4afc1bdaa9588c9097785e3af10cec"
   name = "github.com/davecgh/go-spew"
   packages = ["spew"]
+  pruneopts = "UT"
   revision = "8991bc29aa16c548c550c7ff78260e27b9ab7c73"
   version = "v1.1.1"
 
 [[projects]]
+  digest = "1:0594af97b2f4cec6554086eeace6597e20a4b69466eb4ada25adf9f4300dddd2"
   name = "github.com/garyburd/redigo"
   packages = [
     "internal",
-    "redis"
+    "redis",
   ]
+  pruneopts = "UT"
   revision = "a69d19351219b6dd56f274f96d85a7014a2ec34e"
   version = "v1.6.0"
 
 [[projects]]
   branch = "master"
+  digest = "1:4a0c6bb4805508a6287675fac876be2ac1182539ca8a32468d8128882e9d5009"
   name = "github.com/golang/snappy"
   packages = ["."]
+  pruneopts = "UT"
   revision = "2e65f85255dbc3072edf28d6b5b8efc472979f5a"
 
 [[projects]]
+  digest = "1:2c3e92804c65a67f4839dfd6c34a64b424d3297a57ccddc0a8f0e6a2661a189b"
   name = "github.com/hanwen/go-fuse"
   packages = [
     "fuse",
     "fuse/nodefs",
     "fuse/pathfs",
     "internal/utimens",
-    "splice"
+    "splice",
   ]
+  pruneopts = "UT"
   revision = "95c6370914ac7822973d1893680e878e156f8d70"
 
 [[projects]]
+  digest = "1:8ec8d88c248041a6df5f6574b87bc00e7e0b493881dad2e7ef47b11dc69093b5"
   name = "github.com/hashicorp/golang-lru"
   packages = [
     ".",
-    "simplelru"
+    "simplelru",
   ]
+  pruneopts = "UT"
   revision = "20f1fb78b0740ba8c3cb143a61e86ba5c8669768"
   version = "v0.5.0"
 
 [[projects]]
+  branch = "master"
+  digest = "1:f433da6fbabb0bd1bd730fd340782015c644123d02eb78c20c69ce03352daad1"
+  name = "github.com/kardianos/osext"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "2bc1f35cddc0cc527b4bc3dce8578fc2a6c11384"
+
+[[projects]]
+  digest = "1:3cafc6a5a1b8269605d9df4c6956d43d8011fc57f266ca6b9d04da6c09dee548"
   name = "github.com/mattn/go-sqlite3"
   packages = ["."]
+  pruneopts = "UT"
   revision = "25ecb14adfc7543176f7d85291ec7dba82c6f7e4"
   version = "v1.9.0"
 
 [[projects]]
   branch = "master"
+  digest = "1:41f3b549dbb8216e490c27926c09dc055aa509b3476e7cbc3317103990b13aeb"
   name = "github.com/op/go-logging"
   packages = ["."]
+  pruneopts = "UT"
   revision = "970db520ece77730c7e4724c61121037378659d9"
 
 [[projects]]
+  digest = "1:40e195917a951a8bf867cd05de2a46aaf1806c50cf92eebf4c16f78cd196f747"
   name = "github.com/pkg/errors"
   packages = ["."]
+  pruneopts = "UT"
   revision = "645ef00459ed84a119197bfb8d8205042c6df63d"
   version = "v0.8.0"
 
 [[projects]]
+  digest = "1:0028cb19b2e4c3112225cd871870f2d9cf49b9b4276531f03438a88e94be86fe"
   name = "github.com/pmezard/go-difflib"
   packages = ["difflib"]
+  pruneopts = "UT"
   revision = "792786c7400a136282c1664665ae0a8db921c6c2"
   version = "v1.0.0"
 
 [[projects]]
+  digest = "1:1ad7be70615b095707f558f510013198d24e26f99f5319a38c2039de46576945"
+  name = "github.com/sevlyar/go-daemon"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "bf839693b97cb19a587b25649bbcb59ee16bdb2f"
+  version = "v0.1.5"
+
+[[projects]]
+  digest = "1:ac83cf90d08b63ad5f7e020ef480d319ae890c208f8524622a2f3136e2686b02"
   name = "github.com/stretchr/objx"
   packages = ["."]
+  pruneopts = "UT"
   revision = "477a77ecc69700c7cdeb1fa9e129548e1c1c393c"
   version = "v0.1.1"
 
 [[projects]]
+  digest = "1:15a4a7e5afac3cea801fa24831fce3bf3b5bd3620cbf8355a07b7dbf06877883"
   name = "github.com/stretchr/testify"
   packages = [
     "assert",
-    "mock"
+    "mock",
   ]
+  pruneopts = "UT"
   revision = "f35b8ab0b5a2cef36673838d662e249dd9c94686"
   version = "v1.2.2"
 
 [[projects]]
   branch = "master"
+  digest = "1:847b2fa555d4d74ab5dc4d38b3930c4206b86a3dec76cb490251bbf151be526f"
   name = "github.com/xxtea/xxtea-go"
   packages = ["xxtea"]
+  pruneopts = "UT"
   revision = "35c4b17eecf6c3c2350f8cecaf1b3f9f7fafc242"
 
 [[projects]]
   branch = "master"
+  digest = "1:8db39ece54390c0808fc3822518339fd8dfdceb27e088485998fe5cd0ba0acd7"
   name = "golang.org/x/crypto"
   packages = ["blake2b"]
+  pruneopts = "UT"
   revision = "ff983b9c42bc9fbf91556e191cc8efb585c16908"
 
 [[projects]]
   branch = "master"
+  digest = "1:76ee51c3f468493aff39dbacc401e8831fbb765104cbf613b89bef01cf4bad70"
   name = "golang.org/x/net"
   packages = ["context"]
+  pruneopts = "UT"
   revision = "161cd47e91fd58ac17490ef4d742dc98bb4cf60e"
 
 [[projects]]
   branch = "master"
+  digest = "1:39ebcc2b11457b703ae9ee2e8cca0f68df21969c6102cb3b705f76cca0ea0239"
   name = "golang.org/x/sync"
   packages = ["errgroup"]
+  pruneopts = "UT"
   revision = "1d60e4601c6fd243af51cc01ddf169918a5407ca"
 
 [[projects]]
   branch = "master"
+  digest = "1:711af68777cecdb46e65dc72c0878c47872c1d39c12a198ded31d36a783a9aff"
   name = "golang.org/x/sys"
   packages = [
     "cpu",
-    "unix"
+    "unix",
   ]
+  pruneopts = "UT"
   revision = "d0be0721c37eeb5299f245a996a483160fc36940"
 
 [[projects]]
+  digest = "1:342378ac4dcb378a5448dd723f0784ae519383532f5e70ade24132c4c8693202"
   name = "gopkg.in/yaml.v2"
   packages = ["."]
+  pruneopts = "UT"
   revision = "5420a8b6744d3b0345ab293f6fcba19c978f1183"
   version = "v2.2.1"
 
 [[projects]]
+  digest = "1:62a4a82a279754c697b47785d38521c4e61e2c8ad090deac65daf0d9c1fd1d8c"
   name = "zombiezen.com/go/capnproto2"
   packages = [
     ".",
@@ -135,14 +188,37 @@
     "internal/packed",
     "internal/schema",
     "internal/strquote",
-    "schemas"
+    "schemas",
   ]
+  pruneopts = "UT"
   revision = "7cfd211c19c7f5783c695f3654efa46f0df259c3"
   version = "v2.17.1"
 
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "7d7ce0c66504ff44efa9b13655d3b7092e142b084a95b8fab2fee5a94d222731"
+  input-imports = [
+    "github.com/codegangsta/cli",
+    "github.com/garyburd/redigo/redis",
+    "github.com/golang/snappy",
+    "github.com/hanwen/go-fuse/fuse",
+    "github.com/hanwen/go-fuse/fuse/nodefs",
+    "github.com/hanwen/go-fuse/fuse/pathfs",
+    "github.com/hashicorp/golang-lru",
+    "github.com/mattn/go-sqlite3",
+    "github.com/op/go-logging",
+    "github.com/pkg/errors",
+    "github.com/sevlyar/go-daemon",
+    "github.com/stretchr/testify/assert",
+    "github.com/stretchr/testify/mock",
+    "github.com/xxtea/xxtea-go/xxtea",
+    "golang.org/x/crypto/blake2b",
+    "golang.org/x/sync/errgroup",
+    "golang.org/x/sys/unix",
+    "gopkg.in/yaml.v2",
+    "zombiezen.com/go/capnproto2",
+    "zombiezen.com/go/capnproto2/encoding/text",
+    "zombiezen.com/go/capnproto2/schemas",
+  ]
   solver-name = "gps-cdcl"
   solver-version = 1
