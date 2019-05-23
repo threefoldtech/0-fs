@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"io/ioutil"
 	"os"
 	"os/signal"
@@ -9,6 +8,7 @@ import (
 	"strings"
 	"syscall"
 
+	"github.com/sevlyar/go-daemon"
 	"github.com/threefoldtech/0-fs/meta"
 
 	g8ufs "github.com/threefoldtech/0-fs"
@@ -67,12 +67,39 @@ func reload(fs *g8ufs.G8ufs, cmd *Cmd) error {
 }
 
 func mount(cmd *Cmd, target string) error {
-	fs, err := start(cmd, target)
+	if cmd.LogPath == "" {
+		cmd.LogPath = "/var/log/g8ufs.log"
+	}
+	cntxt := &daemon.Context{
+		PidFileName: cmd.PidPath,
+		PidFilePerm: 0644,
+		LogFileName: cmd.LogPath,
+		LogFilePerm: 0640,
+		WorkDir:     "./",
+		Umask:       027,
+	}
+
+	var (
+		fs  *g8ufs.G8ufs
+		err error
+	)
+
+	if cmd.Daemon {
+		child, err := cntxt.Reborn()
+		if err != nil {
+			log.Fatal("Unable to run: ", err)
+		}
+		if child != nil {
+			// parent process stops
+			return nil
+		}
+	}
+	defer cntxt.Release()
+
+	fs, err = start(cmd, target)
 	if err != nil {
 		return err
 	}
-
-	fmt.Println("mount starts")
 
 	exit := make(chan error)
 
@@ -82,12 +109,14 @@ func mount(cmd *Cmd, target string) error {
 
 	sig := make(chan os.Signal, 2)
 	signal.Notify(sig, syscall.SIGTERM, syscall.SIGINT, syscall.SIGHUP)
-
 	defer signal.Stop(sig)
+
+	log.Info("mount ready")
 
 	for {
 		select {
 		case err := <-exit:
+			log.Info("filesystem unmounted, terminating")
 			return err
 		case s := <-sig:
 			if s == syscall.SIGTERM || s == syscall.SIGINT {

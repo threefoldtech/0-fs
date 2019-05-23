@@ -6,7 +6,7 @@ import (
 
 	"github.com/codegangsta/cli"
 	"github.com/op/go-logging"
-	"github.com/threefoldtech/0-fs"
+	g8ufs "github.com/threefoldtech/0-fs"
 )
 
 var log = logging.MustGetLogger("main")
@@ -19,6 +19,9 @@ type Cmd struct {
 	Router  string
 	Reset   bool
 	Debug   bool
+	Daemon  bool
+	PidPath string
+	LogPath string
 }
 
 func (c *Cmd) Validate() []error {
@@ -38,6 +41,9 @@ func action(ctx *cli.Context) error {
 		URL:     ctx.GlobalString("storage-url"),
 		Router:  ctx.GlobalString("local-router"),
 		Reset:   ctx.GlobalBool("reset"),
+		Daemon:  ctx.GlobalBool("daemon"),
+		PidPath: ctx.GlobalString("pid"),
+		LogPath: ctx.GlobalString("log"),
 	}
 
 	return mount(&cmd, args.First())
@@ -82,7 +88,15 @@ func main() {
 			},
 			cli.StringFlag{
 				Name:  "log",
-				Usage: "write logs to file (default to stdout)",
+				Usage: "write logs to file (default to stderr)",
+			},
+			cli.BoolFlag{
+				Name:  "daemon,d",
+				Usage: "start 0-fs as a daemon",
+			},
+			cli.StringFlag{
+				Name:  "pid",
+				Usage: "when starting as a daemon, location of the pid file",
 			},
 		},
 
@@ -102,6 +116,8 @@ func main() {
 				}
 
 				logging.SetBackend(logging.NewLogBackend(file, "", 0))
+			} else {
+				logging.SetBackend(logging.NewLogBackend(os.Stderr, "", 0))
 			}
 
 			if ctx.GlobalBool("debug") {
