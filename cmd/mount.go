@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"io/ioutil"
 	"os"
 	"os/signal"
@@ -100,6 +101,13 @@ func mount(cmd *Cmd, target string) error {
 	if err != nil {
 		return err
 	}
+
+	// this line is very important because it works as
+	// a signal to core0 that the rootfs of the container
+	// is ready and then proceed with starting the container
+	// init itself. without this print statement core0 will
+	// wait for sometime before times out.
+	fmt.Println("mount starts")
 
 	exit := make(chan error)
 
