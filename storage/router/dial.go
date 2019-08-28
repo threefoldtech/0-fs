@@ -5,6 +5,7 @@ import (
 	"math/rand"
 	"net"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -13,7 +14,8 @@ const (
 )
 
 var (
-	dnsCache = map[string]lookup{}
+	dnsCache  = map[string]lookup{}
+	dnsCacheM sync.Mutex
 )
 
 type lookup struct {
@@ -27,6 +29,9 @@ func dial(network, address string) (net.Conn, error) {
 	if len(parts) != 2 {
 		return nil, fmt.Errorf("mallformed address expected format <host>:<port>")
 	}
+
+	dnsCacheM.Lock()
+	defer dnsCacheM.Unlock()
 
 	var ips []net.IP
 	if lookup, ok := dnsCache[parts[0]]; ok {
