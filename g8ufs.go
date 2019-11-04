@@ -100,9 +100,20 @@ func Mount(opt *Options) (*G8ufs, error) {
 		server.WaitMount()
 	}
 
+	info, err := os.Stat(ro)
+	if err == nil {
+		//this should not fail ever, because we already make sure that
+		//ro exists before we reach here. we still do the check just in
+		//case, but no action is needed in case it failed
+
+		//Note, we need to change the `rw` perm to match the `ro` perm
+		//so the final mount point has the same permissions as the flist
+		os.Chmod(rw, info.Mode())
+	}
+
 	log.Debugf("Fuse mount is complete")
 
-	err := syscall.Mount("overlay",
+	err = syscall.Mount("overlay",
 		opt.Target,
 		"overlay",
 		syscall.MS_NOATIME,
