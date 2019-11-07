@@ -82,11 +82,9 @@ func mountRO(target string, storage storage.Storage, meta meta.MetaStore, cache 
 		Config: cfg,
 		layers: []string{target},
 	}
+
 	log.Debugf("Waiting for fuse mount")
-	if err := server.WaitMount(); err != nil {
-		server.Unmount()
-		return nil, fmt.Errorf("failed to wait for fuse mount: %s", err)
-	}
+	server.WaitMount()
 
 	return zfs, nil
 }
