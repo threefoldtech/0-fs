@@ -34,6 +34,7 @@ func start(cmd *Cmd, target string) (*g8ufs.G8ufs, error) {
 		Target:    target,
 		Storage:   dataStore,
 		Reset:     cmd.Reset,
+		ReadOnly:  cmd.ReadOnly,
 	})
 }
 
