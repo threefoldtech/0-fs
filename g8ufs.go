@@ -30,6 +30,7 @@ type Starter interface {
 
 type Exec func(name string, arg ...string) Starter
 
+//Options are mount options
 type Options struct {
 	//Backend (required) working directory where the filesystem keeps it's cache and others
 	//will be created if doesn't exist
@@ -46,58 +47,108 @@ type Options struct {
 	Storage storage.Storage
 	//Reset if set, will wipe up the backend clean before mounting.
 	Reset bool
+	//Mount fs read-only
+	ReadOnly bool
 }
 
+//G8ufs struct
 type G8ufs struct {
 	*rofs.Config
-	target string
-	fuse   string
+	layers []string
 	w      sync.WaitGroup
 }
 
+func mountRO(target string, storage storage.Storage, meta meta.MetaStore, cache string) (*G8ufs, error) {
+	log.Debugf("ro: '%s' ca: %s", target, cache)
+	cfg := rofs.NewConfig(storage, meta, cache)
+	var server *fuse.Server
+
+	fs := rofs.New(cfg)
+	var err error
+	server, err = fuse.NewServer(
+		nodefs.NewFileSystemConnector(
+			pathfs.NewPathNodeFs(fs, nil).Root(),
+			nil,
+		).RawFS(), target, &fuse.MountOptions{
+			AllowOther: true,
+			Options:    []string{"ro"},
+		})
+
+	if err != nil {
+		return nil, err
+	}
+
+	go server.Serve()
+
+	zfs := &G8ufs{
+		Config: cfg,
+		layers: []string{target},
+	}
+	log.Debugf("Waiting for fuse mount")
+	if err := server.WaitMount(); err != nil {
+		return nil, fmt.Errorf("failed to wait for fuse mount: %s", err)
+	}
+
+	return zfs, nil
+}
+
 //Mount mounts fuse with given options, it blocks forever until unmount is called on the given mount point
-func Mount(opt *Options) (*G8ufs, error) {
+func Mount(opt *Options) (fs *G8ufs, err error) {
 	backend := opt.Backend
-	ro := path.Join(backend, "ro") //ro lower layer provided by fuse
-	rw := path.Join(backend, "rw") //rw upper layer on filyestem
-	wd := path.Join(backend, "wd") //wd workdir used by overlayfs
-	toSetup := []string{ro, rw, wd}
+
+	if opt.Reset {
+		os.RemoveAll(backend)
+	}
+
 	ca := path.Join(backend, "ca") //ca cache for downloaded files used by fuse
 	if opt.Cache != "" {
 		ca = opt.Cache
-		os.MkdirAll(ca, 0755)
-	} else {
-		toSetup = append(toSetup, ca)
 	}
 
-	for _, name := range toSetup {
-		if opt.MetaStore != nil && opt.Reset {
-			os.RemoveAll(name)
-		}
-		os.MkdirAll(name, 0755)
+	if err = os.MkdirAll(ca, 0755); err != nil && !os.IsExist(err) {
+		err = fmt.Errorf("failed to prepare cache directory (%s): %s", ca, err)
+		return
 	}
 
-	cfg := rofs.NewConfig(opt.Storage, opt.MetaStore, ca)
-	var server *fuse.Server
-	if opt.MetaStore != nil {
-		fs := rofs.New(cfg)
-		var err error
-		server, err = fuse.NewServer(
-			nodefs.NewFileSystemConnector(
-				pathfs.NewPathNodeFs(fs, nil).Root(),
-				nil,
-			).RawFS(), ro, &fuse.MountOptions{
-				AllowOther: true,
-				Options:    []string{"ro"},
-			})
+	ro := path.Join(backend, "ro") //ro lower layer provided by fuse
+	if opt.ReadOnly {
+		ro = opt.Target
+	}
 
+	if err = os.MkdirAll(ro, 0755); err != nil && !os.IsExist(err) {
+		err = fmt.Errorf("failed to create director '%s': %s", ro, err)
+		return
+	}
+
+	fs, err = mountRO(ro, opt.Storage, opt.MetaStore, ca)
+	if err != nil {
+		err = fmt.Errorf("failed to do ro layer mount: %s", err)
+		return
+	}
+
+	log.Debugf("read-only layer mounted")
+
+	defer func() {
 		if err != nil {
-			return nil, err
+			fs.Unmount()
 		}
 
-		go server.Serve()
-		log.Debugf("Waiting for fuse mount")
-		server.WaitMount()
+		fs.w.Add(1)
+		go fs.watch()
+	}()
+
+	if opt.ReadOnly {
+		return
+	}
+
+	rw := path.Join(backend, "rw") //rw upper layer on filyestem
+	wd := path.Join(backend, "wd") //wd workdir used by overlayfs
+
+	for _, name := range []string{rw, wd} {
+		if err = os.MkdirAll(name, 0755); err != nil && !os.IsExist(err) {
+			err = fmt.Errorf("failed to create director '%s': %s", name, err)
+			return
+		}
 	}
 
 	info, err := os.Stat(ro)
@@ -111,8 +162,6 @@ func Mount(opt *Options) (*G8ufs, error) {
 		os.Chmod(rw, info.Mode())
 	}
 
-	log.Debugf("Fuse mount is complete")
-
 	err = syscall.Mount("overlay",
 		opt.Target,
 		"overlay",
@@ -124,17 +173,17 @@ func Mount(opt *Options) (*G8ufs, error) {
 	)
 
 	if err != nil {
-		if server != nil {
-			server.Unmount()
-		}
-		return nil, err
+		err = fmt.Errorf("failed to mount overlay: %s", err)
+		return
 	}
+
+	fs.layers = append(fs.layers, opt.Target)
 
 	success := false
 	for i := 0; i < 5; i++ {
 		//wait for mount point
 		chk := exec.Command("mountpoint", "-q", opt.Target)
-		if err := chk.Run(); err != nil {
+		if err = chk.Run(); err != nil {
 			log.Debugf("mount point still not ready: %s", err)
 			time.Sleep(time.Second)
 			continue
@@ -144,20 +193,9 @@ func Mount(opt *Options) (*G8ufs, error) {
 	}
 
 	if !success {
-		if server != nil {
-			server.Unmount()
-		}
-		return nil, fmt.Errorf("failed to start mount")
+		err = fmt.Errorf("failed to start mount")
+		return
 	}
-
-	fs := &G8ufs{
-		Config: cfg,
-		target: opt.Target,
-		fuse:   ro,
-	}
-
-	fs.w.Add(1)
-	go fs.watch()
 
 	return fs, nil
 }
@@ -171,7 +209,8 @@ func (fs *G8ufs) watch() {
 	}
 
 	defer unix.Close(n)
-	_, err = unix.InotifyAddWatch(n, fs.target, unix.IN_IGNORED|unix.IN_UNMOUNT)
+	// we only watch last mounted layer
+	_, err = unix.InotifyAddWatch(n, fs.layers[len(fs.layers)-1], unix.IN_IGNORED|unix.IN_UNMOUNT)
 	if err != nil {
 		panic(err)
 	}
@@ -189,7 +228,7 @@ func (fs *G8ufs) watch() {
 //Wait filesystem until it's unmounted.
 func (fs *G8ufs) Wait() error {
 	defer func() {
-		fs.umountFuse()
+		fs.Unmount()
 	}()
 
 	fs.w.Wait()
@@ -203,23 +242,14 @@ func (e errors) Error() string {
 	return fmt.Sprint(e...)
 }
 
-func (fs *G8ufs) umountFuse() error {
-	if err := syscall.Unmount(fs.fuse, syscall.MNT_FORCE|syscall.MNT_DETACH); err != nil {
-		return err
-	}
-
-	return nil
-}
-
+// Unmount make sure 0-fs is unmounted properly
 func (fs *G8ufs) Unmount() error {
 	var errs errors
 
-	if err := syscall.Unmount(fs.target, syscall.MNT_FORCE|syscall.MNT_DETACH); err != nil {
-		errs = append(errs, err)
-	}
-
-	if err := fs.umountFuse(); err != nil {
-		errs = append(errs, err)
+	for i := len(fs.layers) - 1; i >= 0; i-- {
+		if err := syscall.Unmount(fs.layers[i], syscall.MNT_FORCE|syscall.MNT_DETACH); err != nil {
+			errs = append(errs, err)
+		}
 	}
 
 	return errs
