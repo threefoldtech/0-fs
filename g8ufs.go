@@ -60,12 +60,10 @@ type G8ufs struct {
 
 func mountRO(target string, storage storage.Storage, meta meta.MetaStore, cache string) (*G8ufs, error) {
 	log.Debugf("ro: '%s' ca: %s", target, cache)
-	cfg := rofs.NewConfig(storage, meta, cache)
-	var server *fuse.Server
 
+	cfg := rofs.NewConfig(storage, meta, cache)
 	fs := rofs.New(cfg)
-	var err error
-	server, err = fuse.NewServer(
+	server, err := fuse.NewServer(
 		nodefs.NewFileSystemConnector(
 			pathfs.NewPathNodeFs(fs, nil).Root(),
 			nil,
@@ -86,6 +84,7 @@ func mountRO(target string, storage storage.Storage, meta meta.MetaStore, cache 
 	}
 	log.Debugf("Waiting for fuse mount")
 	if err := server.WaitMount(); err != nil {
+		server.Unmount()
 		return nil, fmt.Errorf("failed to wait for fuse mount: %s", err)
 	}
 
