@@ -138,7 +138,7 @@ func Mount(opt *Options) (fs *G8ufs, err error) {
 		return
 	}
 
-	rw := path.Join(backend, "rw") //rw upper layer on filyestem
+	rw := path.Join(backend, "rw") //rw upper layer on filsyestem
 	wd := path.Join(backend, "wd") //wd workdir used by overlayfs
 
 	for _, name := range []string{rw, wd} {
@@ -164,7 +164,7 @@ func Mount(opt *Options) (fs *G8ufs, err error) {
 		"overlay",
 		syscall.MS_NOATIME,
 		fmt.Sprintf(
-			"lowerdir=%s,upperdir=%s,workdir=%s",
+			"lowerdir=%s,upperdir=%s,workdir=%s,index=off",
 			ro, rw, wd,
 		),
 	)
