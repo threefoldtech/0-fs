@@ -100,8 +100,8 @@ func (p *ScanPool) newPool(d Destination) *redis.Pool {
 
 			return nil
 		},
-		MaxActive:   10,
-		MaxIdle:     2,
+		MaxActive:   12,
+		MaxIdle:     4,
 		IdleTimeout: 1 * time.Minute,
 		Wait:        true,
 	}
