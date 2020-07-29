@@ -97,13 +97,6 @@ struct ACI {
 
     id @4: UInt32;
 
-    uid :union {
-        null @5 :Void;
-        value @6 :UInt32;
-    }
-
-    gid :union {
-        null @7 :Void;
-        value @8 :UInt32;
-    }
+    uid @5 :Int32 = -1;
+    gid @6 :Int32 = -1;
 }
