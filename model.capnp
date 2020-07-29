@@ -97,6 +97,6 @@ struct ACI {
 
     id @4: UInt32;
 
-    uid @5 :Int32 = -1;
-    gid @6 :Int32 = -1;
+    uid @5 :Int64 = -1;
+    gid @6 :Int64 = -1;
 }
