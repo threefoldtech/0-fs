@@ -66,7 +66,7 @@ func mountRO(target string, storage storage.Storage, meta meta.MetaStore, cache 
 	server, err := fuse.NewServer(
 		nodefs.NewFileSystemConnector(
 			pathfs.NewPathNodeFs(fs, nil).Root(),
-			nil,
+			&nodefs.Options{},
 		).RawFS(), target, &fuse.MountOptions{
 			AllowOther:    true,
 			FsName:        "g8ufs",
