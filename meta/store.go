@@ -173,7 +173,7 @@ func (s *sqlStore) getAccess(key string) (Access, error) {
 	}
 
 	mode := uint32(aci.Mode())
-
+	log.Debugf("ACL '%s': (%d, %d)", key, uid, gid)
 	return Access{
 		Mode: uint32(os.ModePerm) & mode,
 		UID:  uint32(uid),

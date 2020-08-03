@@ -9,9 +9,9 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/hanwen/go-fuse/fuse"
-	"github.com/hanwen/go-fuse/fuse/nodefs"
-	"github.com/hanwen/go-fuse/fuse/pathfs"
+	"github.com/hanwen/go-fuse/v2/fuse"
+	"github.com/hanwen/go-fuse/v2/fuse/nodefs"
+	"github.com/hanwen/go-fuse/v2/fuse/pathfs"
 	"github.com/op/go-logging"
 	"github.com/threefoldtech/0-fs/meta"
 	"github.com/threefoldtech/0-fs/rofs"
@@ -68,8 +68,10 @@ func mountRO(target string, storage storage.Storage, meta meta.MetaStore, cache 
 			pathfs.NewPathNodeFs(fs, nil).Root(),
 			nil,
 		).RawFS(), target, &fuse.MountOptions{
-			AllowOther: true,
-			Options:    []string{"ro"},
+			AllowOther:    true,
+			FsName:        "g8ufs",
+			DisableXAttrs: true,
+			Options:       []string{"ro", "default_permissions"},
 		})
 
 	if err != nil {
