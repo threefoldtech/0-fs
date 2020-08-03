@@ -92,8 +92,6 @@ func (fs *filesystem) GetAttr(name string, context *fuse.Context) (*fuse.Attr, f
 		size = uint64(len(info.LinkTarget))
 	}
 
-	log.Debugf("Access: %+v", access)
-
 	return &fuse.Attr{
 		Size:   size,
 		Atime:  uint64(info.ModificationTime),
