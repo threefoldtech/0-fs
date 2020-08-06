@@ -11,11 +11,11 @@ import (
 	"path"
 	"strconv"
 
-	"github.com/hashicorp/golang-lru"
+	lru "github.com/hashicorp/golang-lru"
 	_ "github.com/mattn/go-sqlite3"
 	np "github.com/threefoldtech/0-fs/cap.np"
 	"golang.org/x/crypto/blake2b"
-	"zombiezen.com/go/capnproto2"
+	capnp "zombiezen.com/go/capnproto2"
 )
 
 var (
@@ -159,13 +159,20 @@ func (s *sqlStore) getAccess(key string) (Access, error) {
 		return DefaultAccess, err
 	}
 
-	uname, _ := aci.Uname()
-	gname, _ := aci.Gname()
+	uid := aci.Uid()
+	gid := aci.Gid()
+
+	if uid == -1 {
+		uname, _ := aci.Uname()
+		uid = int64(s.lookUpUser(uname))
+	}
+
+	if gid == -1 {
+		gname, _ := aci.Gname()
+		gid = int64(s.lookUpGroup(gname))
+	}
+
 	mode := uint32(aci.Mode())
-
-	uid := s.lookUpUser(uname)
-	gid := s.lookUpGroup(gname)
-
 	return Access{
 		Mode: uint32(os.ModePerm) & mode,
 		UID:  uint32(uid),

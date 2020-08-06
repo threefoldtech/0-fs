@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"math"
 
-	"github.com/hanwen/go-fuse/fuse"
-	"github.com/hanwen/go-fuse/fuse/nodefs"
-	"github.com/hanwen/go-fuse/fuse/pathfs"
+	"github.com/hanwen/go-fuse/v2/fuse"
+	"github.com/hanwen/go-fuse/v2/fuse/nodefs"
+	"github.com/hanwen/go-fuse/v2/fuse/pathfs"
 	"github.com/op/go-logging"
 	"github.com/threefoldtech/0-fs/meta"
 	"github.com/threefoldtech/0-fs/storage"
