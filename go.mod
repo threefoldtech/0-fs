@@ -27,5 +27,3 @@ require (
 	gopkg.in/yaml.v2 v2.3.0
 	zombiezen.com/go/capnproto2 v2.18.0+incompatible
 )
-
-replace github.com/hanwen/go-fuse/v2 => ../go-fuse
