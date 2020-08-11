@@ -28,7 +28,7 @@ func start(cmd *Cmd, target string) (*g8ufs.G8ufs, error) {
 	log.Debug("router\n", dataStore)
 
 	return g8ufs.Mount(&g8ufs.Options{
-		MetaStore: metaStore,
+		Store: metaStore,
 		Backend:   cmd.Backend,
 		Cache:     cmd.Cache,
 		Target:    target,

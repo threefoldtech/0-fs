@@ -15,7 +15,7 @@ type File struct {
 	access Access
 
 	name   string
-	info   MetaInfo
+	info   Info
 	blocks []BlockInfo
 
 	nOnce sync.Once
@@ -52,9 +52,9 @@ func (f *File) Children() []Meta {
 }
 
 //Info return meta info for this dir
-func (f *File) Info() MetaInfo {
+func (f *File) Info() Info {
 	f.iOnce.Do(func() {
-		f.info = MetaInfo{
+		f.info = Info{
 			CreationTime:     f.CreationTime(),
 			ModificationTime: f.ModificationTime(),
 			Size:             f.Size(),

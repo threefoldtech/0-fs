@@ -12,6 +12,7 @@ import (
 	"strconv"
 
 	lru "github.com/hashicorp/golang-lru"
+	// import sqlite3 driver
 	_ "github.com/mattn/go-sqlite3"
 	np "github.com/threefoldtech/0-fs/cap.np"
 	"golang.org/x/crypto/blake2b"
@@ -33,14 +34,17 @@ const (
 	//TraverseLimit capnp message traverse limit
 	TraverseLimit = ^uint64(0)
 
+	//SQLiteDBName is the name of the sqlite3 database stored in an flist
 	SQLiteDBName = "flistdb.sqlite3"
 
-	DirCacheSize    = 1024
+	// DirCacheSize defines the size of the LRU cache for the directories
+	DirCacheSize = 1024
+	// AccessCacheSize defines the size of the LRU cache for ACL
 	AccessCacheSize = 64
 )
 
 //NewStore creates a new meta store with path p
-func NewStore(p string) (MetaStore, error) {
+func NewStore(p string) (Store, error) {
 	p = path.Join(p, SQLiteDBName)
 	db, err := sql.Open("sqlite3", fmt.Sprintf("file:%s?mode=ro", p))
 	if err != nil {
