@@ -10,10 +10,9 @@ ldflags = '-w -s -X $(base).Branch=$(branch) -X $(base).Revision=$(revision) -X 
 getdeps:
 	@echo "Installing golint" && go install golang.org/x/lint/golint
 	@echo "Installing gocyclo" && go install github.com/fzipp/gocyclo
+	@echo "Installing deadcode" && go get -u github.com/remyoudompheng/go-misc/deadcode
 	@echo "Installing misspell" && go install github.com/client9/misspell/cmd/misspell
 	@echo "Installing ineffassign" && go install github.com/gordonklaus/ineffassign
-	@echo "Installing statik" && go install github.com/rakyll/statik
-	@echo "Installing open api generator" && sudo npm install @openapitools/openapi-generator-cli -g
 
 verifiers: vet fmt lint cyclo spelling staticcheck
 
@@ -27,19 +26,22 @@ fmt:
 
 lint:
 	@echo "Running $@"
-	golint -set_exit_status $(shell go list ./...)
+	@${GOPATH}/bin/golint -set_exit_status $(shell go list ./...)
 
 ineffassign:
 	@echo "Running $@"
-	ineffassign .
+	@${GOPATH}/bin/ineffassign .
 
 cyclo:
 	@echo "Running $@"
-	gocyclo -over 100 .
+	@${GOPATH}/bin/gocyclo -over 100 .
 
+deadcode:
+	@echo "Running $@"
+	@${GOPATH}/bin/deadcode -test $(shell go list ./...) || true
 
 spelling:
-	misspell -i monitord -error $(shell ls **/*.go)
+	@${GOPATH}/bin/misspell -i monitord -error $(shell ls **/*.go)
 
 staticcheck:
 	go run honnef.co/go/tools/cmd/staticcheck -- ./...
