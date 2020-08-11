@@ -1,4 +1,4 @@
-# 0-fs [![Build Status](https://travis-ci.com/threefoldtech/0-fs.svg?branch=development)](https://travis-ci.com/threefoldtech/0-fs) [![codecov](https://codecov.io/gh/threefoldtech/0-fs/branch/development/graph/badge.svg)](https://codecov.io/gh/threefoldtech/0-fs)
+# 0-fs ![Tests and Build](https://github.com/threefoldtech/0-fs/workflows/Tests%20and%20Build/badge.svg)
 
 > IMPORTANT: Due to issues with the fuse library, g8ufs should be built with golang v1.8.*. Newer versions of go will cause unexpected issues
 
