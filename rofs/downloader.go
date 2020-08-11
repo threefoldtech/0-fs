@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"math"
 	"os"
@@ -18,10 +19,13 @@ import (
 )
 
 const (
+	// DefaultDownloadWorkers define the default number of workload to use to downloads data blocks
 	DefaultDownloadWorkers = 4
-	DefaultBlockSize       = 512 //KB
+	//DefaultBlockSize is the default block size
+	DefaultBlockSize = 512 //KB
 )
 
+// Downloader allows to get some data blocks using a pool of workers
 type Downloader struct {
 	Workers   int
 	Storage   storage.Storage
@@ -29,11 +33,13 @@ type Downloader struct {
 	BlockSize uint64
 }
 
+// OutputBlock is the result of a Dowloader worker
 type OutputBlock struct {
 	Raw   []byte
 	Index int
 }
 
+// DownloadBlock downloads a data block identified by block
 func (d *Downloader) DownloadBlock(block meta.BlockInfo) ([]byte, error) {
 	log.Debugf("downloading block %x", block.Key)
 	body, err := d.Storage.Get(block.Key)
@@ -63,7 +69,7 @@ func (d *Downloader) DownloadBlock(block meta.BlockInfo) ([]byte, error) {
 	}
 
 	hash := hasher.Sum(nil)
-	if bytes.Compare(hash, block.Decipher) != 0 {
+	if !bytes.Equal(hash, block.Decipher) {
 		return nil, fmt.Errorf("block key(%x), cypher(%x) hash is wrong hash(%x)", block.Key, block.Decipher, hash)
 	}
 
@@ -143,7 +149,7 @@ func (d *Downloader) Download(output *os.File) error {
 	count := 1
 	for result := range results {
 		log.Debugf("writing block %d/%d of %s", count, len(d.Blocks), output.Name())
-		if _, err := output.Seek(int64(result.Index)*int64(d.BlockSize), os.SEEK_SET); err != nil {
+		if _, err := output.Seek(int64(result.Index)*int64(d.BlockSize), io.SeekStart); err != nil {
 			return err
 		}
 

@@ -23,12 +23,12 @@ var (
 	log = logging.MustGetLogger("g8ufs")
 )
 
-type Starter interface {
-	Start() error
-	Wait() error
-}
+// type Starter interface {
+// 	Start() error
+// 	Wait() error
+// }
 
-type Exec func(name string, arg ...string) Starter
+// type Exec func(name string, arg ...string) Starter
 
 //Options are mount options
 type Options struct {
@@ -40,9 +40,9 @@ type Options struct {
 	Cache string
 	//Mount (required) is the mount point
 	Target string
-	//MetaStore (optional), if not provided `Reset` flag will have no effect, and only the backend overlay
+	//Store (optional), if not provided `Reset` flag will have no effect, and only the backend overlay
 	//will be mount at target, allows *full* backups of the backend to be mounted.
-	MetaStore meta.MetaStore
+	Store meta.Store
 	//Storage (required) storage to download files from
 	Storage storage.Storage
 	//Reset if set, will wipe up the backend clean before mounting.
@@ -58,7 +58,7 @@ type G8ufs struct {
 	w      sync.WaitGroup
 }
 
-func mountRO(target string, storage storage.Storage, meta meta.MetaStore, cache string) (*G8ufs, error) {
+func mountRO(target string, storage storage.Storage, meta meta.Store, cache string) (*G8ufs, error) {
 	log.Debugf("ro: '%s' ca: %s", target, cache)
 
 	cfg := rofs.NewConfig(storage, meta, cache)
@@ -119,7 +119,7 @@ func Mount(opt *Options) (fs *G8ufs, err error) {
 		return
 	}
 
-	fs, err = mountRO(ro, opt.Storage, opt.MetaStore, ca)
+	fs, err = mountRO(ro, opt.Storage, opt.Store, ca)
 	if err != nil {
 		err = fmt.Errorf("failed to do ro layer mount: %s", err)
 		return
@@ -218,10 +218,7 @@ func (fs *G8ufs) watch() {
 	_, err = unix.Read(n, buffer[:])
 	if err != nil {
 		log.Errorf("failed watching target: %s", err)
-		return
 	}
-
-	return
 }
 
 //Wait filesystem until it's unmounted.

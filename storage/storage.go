@@ -4,12 +4,11 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/op/go-logging"
 	"github.com/threefoldtech/0-fs/storage/router"
 )
 
 var (
-	log = logging.MustGetLogger("storage")
+	// log = logging.MustGetLogger("storage")
 
 	//DefaultConfig falls back to hub.gig.tech in case
 	//flist does not define a routing table.

@@ -13,7 +13,7 @@ type Dir struct {
 	access Access
 
 	name     string
-	info     MetaInfo
+	info     Info
 	children []Meta
 
 	nOnce sync.Once
@@ -46,9 +46,9 @@ func (d *Dir) Blocks() []BlockInfo {
 }
 
 //Info return meta info for this dir
-func (d *Dir) Info() MetaInfo {
+func (d *Dir) Info() Info {
 	d.iOnce.Do(func() {
-		d.info = MetaInfo{
+		d.info = Info{
 			CreationTime:     d.CreationTime(),
 			ModificationTime: d.ModificationTime(),
 			Size:             4096,

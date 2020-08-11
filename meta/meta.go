@@ -14,8 +14,10 @@ var (
 	ErrNotFound = fmt.Errorf("not found")
 )
 
+// NodeType is the enum for all different file types
 type NodeType uint32
 
+// NodeType enum values
 const (
 	UnknownType     = NodeType(0)
 	DirType         = NodeType(syscall.S_IFDIR)
@@ -27,6 +29,7 @@ const (
 	LinkType        = NodeType(syscall.S_IFLNK)
 )
 
+// String implements fmt.Stringer interface
 func (nt NodeType) String() string {
 	switch nt {
 	case DirType:
@@ -44,17 +47,19 @@ func (nt NodeType) String() string {
 	case LinkType:
 		return "link type"
 	default:
-		return "unkown type"
+		return "unknown type"
 	}
 }
 
+// Access is the ACL of a file
 type Access struct {
 	UID  uint32
 	GID  uint32
 	Mode uint32
 }
 
-type MetaInfo struct {
+// Info is the metadata of a file
+type Info struct {
 	//Common
 	CreationTime     uint32
 	ModificationTime uint32
@@ -74,11 +79,13 @@ type MetaInfo struct {
 	SpecialData string
 }
 
+// BlockInfo is the information needed to retrieve and decrypt a data block
 type BlockInfo struct {
 	Key      []byte
 	Decipher []byte
 }
 
+// Meta is an interface that can be implemented by any type that needs to be used as metadata store for the filesystem
 type Meta interface {
 	fmt.Stringer
 	//base name
@@ -87,12 +94,13 @@ type Meta interface {
 	IsDir() bool
 	Blocks() []BlockInfo
 
-	Info() MetaInfo
+	Info() Info
 
 	Children() []Meta
 }
 
-type MetaStore interface {
+// Store is the interface to implement to read filesystem metadata from an flist
+type Store interface {
 	// Populate(entry Entry) error
 	Get(name string) (Meta, bool)
 }

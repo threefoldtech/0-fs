@@ -6,13 +6,14 @@ import (
 	np "github.com/threefoldtech/0-fs/cap.np"
 )
 
+// Special is the information for a special file in the filesystem
 type Special struct {
 	np.Inode
 	special np.Special
 	access  Access
 
 	name string
-	info MetaInfo
+	info Info
 
 	nOnce sync.Once
 	iOnce sync.Once
@@ -48,7 +49,7 @@ func (s *Special) Children() []Meta {
 }
 
 //Info returns empty list
-func (s *Special) Info() MetaInfo {
+func (s *Special) Info() Info {
 	s.iOnce.Do(func() {
 		s.info = s.getInfo()
 	})
@@ -56,7 +57,7 @@ func (s *Special) Info() MetaInfo {
 	return s.info
 }
 
-func (s *Special) getInfo() MetaInfo {
+func (s *Special) getInfo() Info {
 	t := UnknownType
 	switch s.special.Type() {
 	case np.Special_Type_socket:
@@ -70,7 +71,7 @@ func (s *Special) getInfo() MetaInfo {
 	}
 
 	data, _ := s.special.Data()
-	return MetaInfo{
+	return Info{
 		CreationTime:     s.CreationTime(),
 		ModificationTime: s.ModificationTime(),
 		Size:             s.Size(),

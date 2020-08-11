@@ -25,5 +25,6 @@ require (
 	golang.org/x/sync v0.0.0-20200625203802-6e8e738ad208
 	golang.org/x/sys v0.0.0-20200802091954-4b90ce9b60b3
 	gopkg.in/yaml.v2 v2.3.0
+	honnef.co/go/tools v0.0.1-2020.1.5 // indirect
 	zombiezen.com/go/capnproto2 v2.18.0+incompatible
 )

@@ -12,6 +12,7 @@ import (
 
 var log = logging.MustGetLogger("main")
 
+// Cmd is a struct holding all the value of the CLI flags
 type Cmd struct {
 	Meta     []string
 	Backend  string
@@ -29,7 +30,7 @@ type Cmd struct {
 // Validate command
 func (c *Cmd) Validate() (errs []error) {
 	if len(c.Meta) == 0 {
-		errs = append(errs, fmt.Errorf("--meta is require"))
+		_ = append(errs, fmt.Errorf("--meta is require"))
 	}
 	return nil
 }
