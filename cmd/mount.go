@@ -8,6 +8,7 @@ import (
 	"path"
 	"strings"
 	"syscall"
+	"time"
 
 	"github.com/sevlyar/go-daemon"
 	"github.com/threefoldtech/0-fs/meta"
@@ -91,11 +92,35 @@ func mount(cmd *Cmd, target string) error {
 		if err != nil {
 			log.Fatal("Unable to run: ", err)
 		}
+
 		if child != nil {
-			// parent process stops
+			// parent process
+			// we wait for th mount to happen
+			// before we exit
+			var mounted bool
+			for i := 0; i < 5; i++ {
+				//wait for mount point
+				mounted, err = g8ufs.Mountpoint(target)
+				if err != nil {
+					return err
+				}
+				if mounted {
+					break
+				}
+				time.Sleep(time.Second)
+			}
+			if !mounted {
+				if err := child.Kill(); err != nil {
+					log.Error("failed to terminate fuse process")
+				}
+
+				return fmt.Errorf("fuse mount did not start on time")
+			}
+
 			return nil
 		}
 	}
+
 	defer cntxt.Release()
 
 	fs, err = start(cmd, target)

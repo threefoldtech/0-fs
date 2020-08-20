@@ -178,20 +178,20 @@ func Mount(opt *Options) (fs *G8ufs, err error) {
 
 	fs.layers = append(fs.layers, opt.Target)
 
-	success := false
+	mounted := false
 	for i := 0; i < 5; i++ {
 		//wait for mount point
-		chk := exec.Command("mountpoint", "-q", opt.Target)
-		if err = chk.Run(); err != nil {
-			log.Debugf("mount point still not ready: %s", err)
-			time.Sleep(time.Second)
-			continue
+		mounted, err = Mountpoint(opt.Target)
+		if err != nil {
+			return
 		}
-		success = true
-		break
+		if mounted {
+			break
+		}
+		time.Sleep(time.Second)
 	}
 
-	if !success {
+	if !mounted {
 		err = fmt.Errorf("failed to start mount")
 		return
 	}
@@ -249,4 +249,16 @@ func (fs *G8ufs) Unmount() error {
 	}
 
 	return errs
+}
+
+// Mountpoint checks if a given path is a mount point
+func Mountpoint(path string) (bool, error) {
+	if err := exec.Command("mountpoint", "-q", path).Run(); err != nil {
+		if _, ok := err.(*exec.ExitError); ok {
+			return false, nil
+		}
+		return false, err
+	}
+
+	return true, nil
 }
