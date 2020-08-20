@@ -29,13 +29,13 @@ func start(cmd *Cmd, target string) (*g8ufs.G8ufs, error) {
 	log.Debug("router\n", dataStore)
 
 	return g8ufs.Mount(&g8ufs.Options{
-		Store: metaStore,
-		Backend:   cmd.Backend,
-		Cache:     cmd.Cache,
-		Target:    target,
-		Storage:   dataStore,
-		Reset:     cmd.Reset,
-		ReadOnly:  cmd.ReadOnly,
+		Store:    metaStore,
+		Backend:  cmd.Backend,
+		Cache:    cmd.Cache,
+		Target:   target,
+		Storage:  dataStore,
+		Reset:    cmd.Reset,
+		ReadOnly: cmd.ReadOnly,
 	})
 }
 
@@ -100,6 +100,7 @@ func mount(cmd *Cmd, target string) error {
 			var mounted bool
 			for i := 0; i < 5; i++ {
 				//wait for mount point
+				time.Sleep(time.Second)
 				mounted, err = g8ufs.Mountpoint(target)
 				if err != nil {
 					return err
@@ -107,8 +108,8 @@ func mount(cmd *Cmd, target string) error {
 				if mounted {
 					break
 				}
-				time.Sleep(time.Second)
 			}
+
 			if !mounted {
 				if err := child.Kill(); err != nil {
 					log.Error("failed to terminate fuse process")

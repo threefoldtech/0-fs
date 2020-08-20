@@ -130,6 +130,7 @@ func Mount(opt *Options) (fs *G8ufs, err error) {
 	defer func() {
 		if err != nil {
 			fs.Unmount()
+			return
 		}
 
 		fs.w.Add(1)
@@ -180,6 +181,7 @@ func Mount(opt *Options) (fs *G8ufs, err error) {
 
 	mounted := false
 	for i := 0; i < 5; i++ {
+		time.Sleep(time.Second)
 		//wait for mount point
 		mounted, err = Mountpoint(opt.Target)
 		if err != nil {
@@ -188,7 +190,6 @@ func Mount(opt *Options) (fs *G8ufs, err error) {
 		if mounted {
 			break
 		}
-		time.Sleep(time.Second)
 	}
 
 	if !mounted {
