@@ -8,6 +8,7 @@ import (
 	"path"
 	"strings"
 	"syscall"
+	"time"
 
 	"github.com/sevlyar/go-daemon"
 	"github.com/threefoldtech/0-fs/meta"
@@ -28,13 +29,13 @@ func start(cmd *Cmd, target string) (*g8ufs.G8ufs, error) {
 	log.Debug("router\n", dataStore)
 
 	return g8ufs.Mount(&g8ufs.Options{
-		Store: metaStore,
-		Backend:   cmd.Backend,
-		Cache:     cmd.Cache,
-		Target:    target,
-		Storage:   dataStore,
-		Reset:     cmd.Reset,
-		ReadOnly:  cmd.ReadOnly,
+		Store:    metaStore,
+		Backend:  cmd.Backend,
+		Cache:    cmd.Cache,
+		Target:   target,
+		Storage:  dataStore,
+		Reset:    cmd.Reset,
+		ReadOnly: cmd.ReadOnly,
 	})
 }
 
@@ -91,11 +92,36 @@ func mount(cmd *Cmd, target string) error {
 		if err != nil {
 			log.Fatal("Unable to run: ", err)
 		}
+
 		if child != nil {
-			// parent process stops
+			// parent process
+			// we wait for th mount to happen
+			// before we exit
+			var mounted bool
+			for i := 0; i < 5; i++ {
+				//wait for mount point
+				time.Sleep(time.Second)
+				mounted, err = g8ufs.Mountpoint(target)
+				if err != nil {
+					return err
+				}
+				if mounted {
+					break
+				}
+			}
+
+			if !mounted {
+				if err := child.Kill(); err != nil {
+					log.Error("failed to terminate fuse process")
+				}
+
+				return fmt.Errorf("fuse mount did not start on time")
+			}
+
 			return nil
 		}
 	}
+
 	defer cntxt.Release()
 
 	fs, err = start(cmd, target)
