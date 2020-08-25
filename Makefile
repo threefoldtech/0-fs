@@ -7,6 +7,8 @@ dirty = $(shell test -n "`git diff --shortstat 2> /dev/null | tail -n1`" && echo
 base = github.com/threefoldtech/0-fs
 ldflags = '-w -s -X $(base).Branch=$(branch) -X $(base).Revision=$(revision) -X $(base).Dirty=$(dirty)'
 
+default: build
+
 getdeps:
 	@echo "Installing golint" && go install golang.org/x/lint/golint
 	@echo "Installing gocyclo" && go install github.com/fzipp/gocyclo
