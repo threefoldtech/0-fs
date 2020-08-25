@@ -236,7 +236,7 @@ func (fs *G8ufs) Wait() error {
 type errors []interface{}
 
 func (e errors) Error() string {
-	return fmt.Sprint(e...)
+	return fmt.Sprint(e[:]...)
 }
 
 // Unmount make sure 0-fs is unmounted properly
