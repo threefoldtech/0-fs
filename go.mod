@@ -13,6 +13,7 @@ require (
 	github.com/hanwen/go-fuse/v2 v2.0.3
 	github.com/hashicorp/golang-lru v0.5.4
 	github.com/kardianos/osext v0.0.0-20190222173326-2bc1f35cddc0 // indirect
+	github.com/kr/pretty v0.1.0 // indirect
 	github.com/mattn/go-sqlite3 v1.14.0
 	github.com/op/go-logging v0.0.0-20160315200505-970db520ece7
 	github.com/philhofer/fwd v1.0.0 // indirect
@@ -29,8 +30,8 @@ require (
 	golang.org/x/net v0.0.0-20200707034311-ab3426394381 // indirect
 	golang.org/x/sync v0.0.0-20200625203802-6e8e738ad208
 	golang.org/x/sys v0.0.0-20200802091954-4b90ce9b60b3
-	golang.org/x/tools v0.0.0-20200820010801-b793a1359eac // indirect
+	golang.org/x/tools v0.0.0-20200823205832-c024452afbcd // indirect
+	gopkg.in/check.v1 v1.0.0-20180628173108-788fd7840127 // indirect
 	gopkg.in/yaml.v2 v2.3.0
-	honnef.co/go/tools v0.0.1-2020.1.5 // indirect
 	zombiezen.com/go/capnproto2 v2.18.0+incompatible
 )
