@@ -3,25 +3,35 @@ package main
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/codegangsta/cli"
 	"github.com/op/go-logging"
-	"github.com/threefoldtech/0-fs"
+	g8ufs "github.com/threefoldtech/0-fs"
 )
 
 var log = logging.MustGetLogger("main")
 
+// Cmd is a struct holding all the value of the CLI flags
 type Cmd struct {
-	Meta    []string
-	Backend string
-	Cache   string
-	URL     string
-	Router  string
-	Reset   bool
-	Debug   bool
+	Meta     []string
+	Backend  string
+	Cache    string
+	URL      string
+	Router   string
+	Reset    bool
+	Debug    bool
+	Daemon   bool
+	PidPath  string
+	LogPath  string
+	ReadOnly bool
 }
 
-func (c *Cmd) Validate() []error {
+// Validate command
+func (c *Cmd) Validate() (errs []error) {
+	if len(c.Meta) == 0 {
+		_ = append(errs, fmt.Errorf("--meta is require"))
+	}
 	return nil
 }
 
@@ -32,12 +42,26 @@ func action(ctx *cli.Context) error {
 	}
 
 	cmd := Cmd{
-		Meta:    ctx.GlobalStringSlice("meta"),
-		Backend: ctx.GlobalString("backend"),
-		Cache:   ctx.GlobalString("cache"),
-		URL:     ctx.GlobalString("storage-url"),
-		Router:  ctx.GlobalString("local-router"),
-		Reset:   ctx.GlobalBool("reset"),
+		Meta:     ctx.GlobalStringSlice("meta"),
+		Backend:  ctx.GlobalString("backend"),
+		Cache:    ctx.GlobalString("cache"),
+		URL:      ctx.GlobalString("storage-url"),
+		Router:   ctx.GlobalString("local-router"),
+		Reset:    ctx.GlobalBool("reset"),
+		Daemon:   ctx.GlobalBool("daemon"),
+		PidPath:  ctx.GlobalString("pid"),
+		LogPath:  ctx.GlobalString("log"),
+		ReadOnly: ctx.GlobalBool("ro"),
+	}
+	errs := cmd.Validate()
+	var buf strings.Builder
+	for _, err := range errs {
+		buf.WriteString(err.Error())
+		buf.WriteByte('\n')
+	}
+
+	if buf.Len() != 0 {
+		return fmt.Errorf(buf.String())
 	}
 
 	return mount(&cmd, args.First())
@@ -80,9 +104,21 @@ func main() {
 				Name:  "local-router",
 				Usage: "path to local router.yaml to merge with the router.yaml from the flist. This will allow adding some caching layers",
 			},
+			cli.BoolFlag{
+				Name:  "ro",
+				Usage: "mount in read-only mode",
+			},
 			cli.StringFlag{
 				Name:  "log",
-				Usage: "write logs to file (default to stdout)",
+				Usage: "write logs to file (default to stderr)",
+			},
+			cli.BoolFlag{
+				Name:  "daemon,d",
+				Usage: "start 0-fs as a daemon",
+			},
+			cli.StringFlag{
+				Name:  "pid",
+				Usage: "when starting as a daemon, location of the pid file",
 			},
 		},
 
@@ -102,6 +138,8 @@ func main() {
 				}
 
 				logging.SetBackend(logging.NewLogBackend(file, "", 0))
+			} else {
+				logging.SetBackend(logging.NewLogBackend(os.Stderr, "", 0))
 			}
 
 			if ctx.GlobalBool("debug") {

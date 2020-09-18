@@ -2,11 +2,10 @@ package rofs
 
 import (
 	"fmt"
-	"math"
 
-	"github.com/hanwen/go-fuse/fuse"
-	"github.com/hanwen/go-fuse/fuse/nodefs"
-	"github.com/hanwen/go-fuse/fuse/pathfs"
+	"github.com/hanwen/go-fuse/v2/fuse"
+	"github.com/hanwen/go-fuse/v2/fuse/nodefs"
+	"github.com/hanwen/go-fuse/v2/fuse/pathfs"
 	"github.com/op/go-logging"
 	"github.com/threefoldtech/0-fs/meta"
 	"github.com/threefoldtech/0-fs/storage"
@@ -23,13 +22,13 @@ var (
 // Config represents a filesystem configuration object
 // Configuration objects can be used to manipulate some filesystem flags in runtime
 type Config struct {
-	store   meta.MetaStore
+	store   meta.Store
 	storage storage.Storage
 	cache   string
 }
 
 //SetMetaStore sets the filesystem meta store in runtime.
-func (c *Config) SetMetaStore(store meta.MetaStore) {
+func (c *Config) SetMetaStore(store meta.Store) {
 	//TODO: should this be done atomically in a way that is synched ?
 	c.store = store
 }
@@ -46,7 +45,7 @@ type filesystem struct {
 }
 
 //NewConfig creates a new filesystem config object with given meta store, and data storage and local cache directory
-func NewConfig(storage storage.Storage, store meta.MetaStore, cache string) *Config {
+func NewConfig(storage storage.Storage, store meta.Store, cache string) *Config {
 	return &Config{
 		store:   store,
 		storage: storage,
@@ -80,7 +79,7 @@ func (fs *filesystem) GetAttr(name string, context *fuse.Context) (*fuse.Attr, f
 
 	access := info.Access
 
-	blocks := uint64(math.Ceil(float64(info.Size / blkSize)))
+	blocks := uint64(float64(info.Size / blkSize))
 
 	var major, minor uint32
 	if info.SpecialData != "" {

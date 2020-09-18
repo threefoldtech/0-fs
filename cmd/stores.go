@@ -36,8 +36,8 @@ func getDB(db string) (string, error) {
 	return db, nil
 }
 
-func getMetaStore(dbs []string) (meta.MetaStore, error) {
-	var stores []meta.MetaStore
+func getMetaStore(dbs []string) (meta.Store, error) {
+	var stores []meta.Store
 
 	for i, db := range dbs {
 		if len(db) == 0 {
@@ -151,7 +151,7 @@ func unpack(r io.Reader, dest string) error {
 }
 
 //getStoresFromCmd helper function to initialize stores from cmd line
-func getStoresFromCmd(cmd *Cmd) (metaStore meta.MetaStore, dataStore *router.Router, err error) {
+func getStoresFromCmd(cmd *Cmd) (metaStore meta.Store, dataStore *router.Router, err error) {
 	metaStore, err = getMetaStore(cmd.Meta)
 	if err != nil {
 		return

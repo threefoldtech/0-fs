@@ -18,7 +18,7 @@ var (
 	//ErrPoolNotFound when table reference a pool that is not configured
 	ErrPoolNotFound = fmt.Errorf("pool not found")
 
-	//ErrInvalidDestination
+	//ErrUnknownScheme is returned when a not supported scheme is used
 	ErrUnknownScheme = fmt.Errorf("unknown scheme")
 )
 
@@ -30,10 +30,12 @@ func (e Errors) Add(err error) Errors {
 	return append(e, err)
 }
 
+// HasErrors return true if e contains at least one error
 func (e Errors) HasErrors() bool {
 	return len(e) > 0
 }
 
+//Error implements the errors.Error interface
 func (e Errors) Error() string {
 	var buf bytes.Buffer
 	buf.WriteString(fmt.Sprintf("found %d errors", len(e)))

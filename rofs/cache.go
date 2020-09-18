@@ -1,6 +1,7 @@
 package rofs
 
 import (
+	"io"
 	"os"
 	"path"
 	"syscall"
@@ -43,7 +44,7 @@ func (fs *filesystem) checkAndGet(m meta.Meta) (*os.File, error) {
 	}
 
 	f.Sync()
-	f.Seek(0, os.SEEK_SET)
+	f.Seek(0, io.SeekStart)
 	return f, nil
 }
 

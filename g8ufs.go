@@ -9,9 +9,9 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/hanwen/go-fuse/fuse"
-	"github.com/hanwen/go-fuse/fuse/nodefs"
-	"github.com/hanwen/go-fuse/fuse/pathfs"
+	"github.com/hanwen/go-fuse/v2/fuse"
+	"github.com/hanwen/go-fuse/v2/fuse/nodefs"
+	"github.com/hanwen/go-fuse/v2/fuse/pathfs"
 	"github.com/op/go-logging"
 	"github.com/threefoldtech/0-fs/meta"
 	"github.com/threefoldtech/0-fs/rofs"
@@ -23,13 +23,14 @@ var (
 	log = logging.MustGetLogger("g8ufs")
 )
 
-type Starter interface {
-	Start() error
-	Wait() error
-}
+// type Starter interface {
+// 	Start() error
+// 	Wait() error
+// }
 
-type Exec func(name string, arg ...string) Starter
+// type Exec func(name string, arg ...string) Starter
 
+//Options are mount options
 type Options struct {
 	//Backend (required) working directory where the filesystem keeps it's cache and others
 	//will be created if doesn't exist
@@ -39,70 +40,129 @@ type Options struct {
 	Cache string
 	//Mount (required) is the mount point
 	Target string
-	//MetaStore (optional), if not provided `Reset` flag will have no effect, and only the backend overlay
+	//Store (optional), if not provided `Reset` flag will have no effect, and only the backend overlay
 	//will be mount at target, allows *full* backups of the backend to be mounted.
-	MetaStore meta.MetaStore
+	Store meta.Store
 	//Storage (required) storage to download files from
 	Storage storage.Storage
 	//Reset if set, will wipe up the backend clean before mounting.
 	Reset bool
+	//Mount fs read-only
+	ReadOnly bool
 }
 
+//G8ufs struct
 type G8ufs struct {
 	*rofs.Config
-	target string
-	fuse   string
-	w sync.WaitGroup
+	layers []string
+	w      sync.WaitGroup
+}
+
+func mountRO(target string, storage storage.Storage, meta meta.Store, cache string) (*G8ufs, error) {
+	log.Debugf("ro: '%s' ca: %s", target, cache)
+
+	cfg := rofs.NewConfig(storage, meta, cache)
+	fs := rofs.New(cfg)
+	server, err := fuse.NewServer(
+		nodefs.NewFileSystemConnector(
+			pathfs.NewPathNodeFs(fs, nil).Root(),
+			&nodefs.Options{},
+		).RawFS(), target, &fuse.MountOptions{
+			AllowOther:    true,
+			FsName:        "g8ufs",
+			DisableXAttrs: true,
+			Options:       []string{"ro", "default_permissions"},
+		})
+
+	if err != nil {
+		return nil, err
+	}
+
+	go server.Serve()
+
+	zfs := &G8ufs{
+		Config: cfg,
+		layers: []string{target},
+	}
+
+	log.Debugf("Waiting for fuse mount")
+	server.WaitMount()
+
+	return zfs, nil
 }
 
 //Mount mounts fuse with given options, it blocks forever until unmount is called on the given mount point
-func Mount(opt *Options) (*G8ufs, error) {
+func Mount(opt *Options) (fs *G8ufs, err error) {
 	backend := opt.Backend
-	ro := path.Join(backend, "ro") //ro lower layer provided by fuse
-	rw := path.Join(backend, "rw") //rw upper layer on filyestem
-	wd := path.Join(backend, "wd") //wd workdir used by overlayfs
-	toSetup := []string{ro, rw, wd}
+
+	if opt.Reset {
+		os.RemoveAll(backend)
+	}
+
 	ca := path.Join(backend, "ca") //ca cache for downloaded files used by fuse
 	if opt.Cache != "" {
 		ca = opt.Cache
-		os.MkdirAll(ca, 0755)
-	} else {
-		toSetup = append(toSetup, ca)
 	}
 
-	for _, name := range toSetup {
-		if opt.MetaStore != nil && opt.Reset {
-			os.RemoveAll(name)
-		}
-		os.MkdirAll(name, 0755)
+	if err = os.MkdirAll(ca, 0755); err != nil && !os.IsExist(err) {
+		err = fmt.Errorf("failed to prepare cache directory (%s): %s", ca, err)
+		return
 	}
 
-	cfg := rofs.NewConfig(opt.Storage, opt.MetaStore, ca)
-	var server *fuse.Server
-	if opt.MetaStore != nil {
-		fs := rofs.New(cfg)
-		var err error
-		server, err = fuse.NewServer(
-			nodefs.NewFileSystemConnector(
-				pathfs.NewPathNodeFs(fs, nil).Root(),
-				nil,
-			).RawFS(), ro, &fuse.MountOptions{
-				AllowOther: true,
-				Options:    []string{"ro"},
-			})
+	ro := path.Join(backend, "ro") //ro lower layer provided by fuse
+	if opt.ReadOnly {
+		ro = opt.Target
+	}
 
+	if err = os.MkdirAll(ro, 0755); err != nil && !os.IsExist(err) {
+		err = fmt.Errorf("failed to create director '%s': %s", ro, err)
+		return
+	}
+
+	fs, err = mountRO(ro, opt.Storage, opt.Store, ca)
+	if err != nil {
+		err = fmt.Errorf("failed to do ro layer mount: %s", err)
+		return
+	}
+
+	log.Debugf("read-only layer mounted")
+
+	defer func() {
 		if err != nil {
-			return nil, err
+			fs.Unmount()
+			return
 		}
 
-		go server.Serve()
-		log.Debugf("Waiting for fuse mount")
-		server.WaitMount()
+		fs.w.Add(1)
+		go fs.watch()
+	}()
+
+	if opt.ReadOnly {
+		return
 	}
 
-	log.Debugf("Fuse mount is complete")
+	rw := path.Join(backend, "rw") //rw upper layer on filyestem
+	wd := path.Join(backend, "wd") //wd workdir used by overlayfs
 
-	err := syscall.Mount("overlay",
+	for _, name := range []string{rw, wd} {
+		if err = os.MkdirAll(name, 0755); err != nil && !os.IsExist(err) {
+			err = fmt.Errorf("failed to create director '%s': %s", name, err)
+			return
+		}
+	}
+
+	info, err := os.Stat(ro)
+	if err == nil {
+		//this should not fail ever, because we already make sure that
+		//ro exists before we reach here. we still do the check just in
+		//case, but no action is needed in case it failed
+
+		//Note, we need to change the `rw` perm to match the `ro` perm
+		//so the final mount point has the same permissions as the flist
+		os.Chmod(rw, info.Mode())
+	}
+
+	err = syscall.Mount("overlay",
 		opt.Target,
 		"overlay",
 		syscall.MS_NOATIME,
@@ -113,40 +173,29 @@ func Mount(opt *Options) (*G8ufs, error) {
 	)
 
 	if err != nil {
-		if server != nil {
-			server.Unmount()
-		}
-		return nil, err
+		err = fmt.Errorf("failed to mount overlay: %s", err)
+		return
 	}
 
-	success := false
+	fs.layers = append(fs.layers, opt.Target)
+
+	mounted := false
 	for i := 0; i < 5; i++ {
+		time.Sleep(time.Second)
 		//wait for mount point
-		chk := exec.Command("mountpoint", "-q", opt.Target)
-		if err := chk.Run(); err != nil {
-			log.Debugf("mount point still not ready: %s", err)
-			time.Sleep(time.Second)
-			continue
+		mounted, err = Mountpoint(opt.Target)
+		if err != nil {
+			return
 		}
-		success = true
-		break
-	}
-
-	if !success {
-		if server != nil {
-			server.Unmount()
+		if mounted {
+			break
 		}
-		return nil, fmt.Errorf("failed to start mount")
 	}
 
-	fs := &G8ufs{
-		Config: cfg,
-		target: opt.Target,
-		fuse:   ro,
+	if !mounted {
+		err = fmt.Errorf("failed to start mount")
+		return
 	}
-
-	fs.w.Add(1)
-	go fs.watch()
 
 	return fs, nil
 }
@@ -160,7 +209,8 @@ func (fs *G8ufs) watch() {
 	}
 
 	defer unix.Close(n)
-	_, err = unix.InotifyAddWatch(n, fs.target, unix.IN_IGNORED|unix.IN_UNMOUNT)
+	// we only watch last mounted layer
+	_, err = unix.InotifyAddWatch(n, fs.layers[len(fs.layers)-1], unix.IN_IGNORED|unix.IN_UNMOUNT)
 	if err != nil {
 		panic(err)
 	}
@@ -169,16 +219,13 @@ func (fs *G8ufs) watch() {
 	_, err = unix.Read(n, buffer[:])
 	if err != nil {
 		log.Errorf("failed watching target: %s", err)
-		return
 	}
-
-	return
 }
 
 //Wait filesystem until it's unmounted.
 func (fs *G8ufs) Wait() error {
 	defer func() {
-		fs.umountFuse()
+		fs.Unmount()
 	}()
 
 	fs.w.Wait()
@@ -189,27 +236,30 @@ func (fs *G8ufs) Wait() error {
 type errors []interface{}
 
 func (e errors) Error() string {
-	return fmt.Sprint(e...)
+	return fmt.Sprint(e[:]...)
 }
 
-func (fs *G8ufs) umountFuse() error {
-	if err := syscall.Unmount(fs.fuse, syscall.MNT_FORCE|syscall.MNT_DETACH); err != nil {
-		return err
-	}
-
-	return nil
-}
-
+// Unmount make sure 0-fs is unmounted properly
 func (fs *G8ufs) Unmount() error {
 	var errs errors
 
-	if err := syscall.Unmount(fs.target, syscall.MNT_FORCE|syscall.MNT_DETACH); err != nil {
-		errs = append(errs, err)
-	}
-
-	if err := fs.umountFuse(); err != nil {
-		errs = append(errs, err)
+	for i := len(fs.layers) - 1; i >= 0; i-- {
+		if err := syscall.Unmount(fs.layers[i], syscall.MNT_FORCE|syscall.MNT_DETACH); err != nil {
+			errs = append(errs, err)
+		}
 	}
 
 	return errs
+}
+
+// Mountpoint checks if a given path is a mount point
+func Mountpoint(path string) (bool, error) {
+	if err := exec.Command("mountpoint", "-q", path).Run(); err != nil {
+		if _, ok := err.(*exec.ExitError); ok {
+			return false, nil
+		}
+		return false, err
+	}
+
+	return true, nil
 }

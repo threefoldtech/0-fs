@@ -42,7 +42,7 @@ func (e exactMatch) In(h []byte) bool {
 
 	head := h[0:len(e)]
 
-	return bytes.Compare(e, head) == 0
+	return bytes.Equal(e, head)
 }
 
 func (e exactMatch) String() string {

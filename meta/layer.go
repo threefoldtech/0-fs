@@ -2,7 +2,7 @@ package meta
 
 import "sync"
 
-type stores []MetaStore
+type stores []Store
 
 type mergedDir struct {
 	Meta
@@ -36,7 +36,7 @@ func (m *mergedDir) Children() []Meta {
 	return m.merged
 }
 
-func (s stores) getMerge(p string, top Meta, under []MetaStore) Meta {
+func (s stores) getMerge(p string, top Meta, under []Store) Meta {
 	var lower []Meta
 	for _, store := range under {
 		if m, ok := store.Get(p); ok {
@@ -75,7 +75,7 @@ func (s stores) Get(p string) (Meta, bool) {
 // Example:
 //  store = Layered(s1, s2)
 //  store.Get(p) will search s2 first, then s1
-func Layered(store ...MetaStore) MetaStore {
+func Layered(store ...Store) Store {
 	if len(store) == 1 {
 		return store[0]
 	}

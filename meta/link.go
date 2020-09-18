@@ -6,13 +6,14 @@ import (
 	np "github.com/threefoldtech/0-fs/cap.np"
 )
 
+// Link is a inode struct representing a link in the filesystem
 type Link struct {
 	np.Inode
 	link   np.Link
 	access Access
 
 	name string
-	info MetaInfo
+	info Info
 
 	nOnce sync.Once
 	iOnce sync.Once
@@ -48,10 +49,10 @@ func (l *Link) Children() []Meta {
 }
 
 //Info returns empty list
-func (l *Link) Info() MetaInfo {
+func (l *Link) Info() Info {
 	l.iOnce.Do(func() {
 		target, _ := l.link.Target()
-		l.info = MetaInfo{
+		l.info = Info{
 			CreationTime:     l.CreationTime(),
 			ModificationTime: l.ModificationTime(),
 			Size:             l.Size(),
