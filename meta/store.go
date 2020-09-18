@@ -10,6 +10,7 @@ import (
 	"os/user"
 	"path"
 	"strconv"
+	"sync"
 
 	lru "github.com/hashicorp/golang-lru"
 	// import sqlite3 driver
@@ -81,10 +82,14 @@ type sqlStore struct {
 	db   *sql.DB
 
 	//cache  *cache.Cache
-	cache  *lru.Cache
-	acl    *lru.Cache
+	cache *lru.Cache
+	acl   *lru.Cache
+
 	users  map[string]int
 	groups map[string]int
+
+	usersM  sync.Mutex
+	groupsM sync.Mutex
 }
 
 func (s *sqlStore) hash(path string) string {
@@ -126,6 +131,9 @@ func (s *sqlStore) getACI(key string) (*np.ACI, error) {
 }
 
 func (s *sqlStore) lookUpUser(name string) int {
+	s.usersM.Lock()
+	defer s.usersM.Unlock()
+
 	if id, ok := s.users[name]; ok {
 		return id
 	}
@@ -141,6 +149,9 @@ func (s *sqlStore) lookUpUser(name string) int {
 }
 
 func (s *sqlStore) lookUpGroup(name string) int {
+	s.groupsM.Lock()
+	defer s.groupsM.Unlock()
+
 	if id, ok := s.groups[name]; ok {
 		return id
 	}
