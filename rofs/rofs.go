@@ -2,6 +2,7 @@ package rofs
 
 import (
 	"fmt"
+	"syscall"
 
 	"github.com/hanwen/go-fuse/v2/fuse"
 	"github.com/hanwen/go-fuse/v2/fuse/nodefs"
@@ -75,6 +76,19 @@ func (fs *filesystem) GetAttr(name string, context *fuse.Context) (*fuse.Attr, f
 		return nil, fuse.EIO
 	}
 
+	var ino uint64 = 0
+
+	if info.Type == meta.RegularType {
+		stat, err := fs.check(m)
+		if err != nil {
+			return nil, fuse.EIO
+		}
+
+		if stat, ok := stat.Sys().(*syscall.Stat_t); ok && stat != nil {
+			ino = stat.Ino
+		}
+	}
+
 	nodeType := uint32(info.Type)
 
 	access := info.Access
@@ -92,6 +106,7 @@ func (fs *filesystem) GetAttr(name string, context *fuse.Context) (*fuse.Attr, f
 	}
 
 	return &fuse.Attr{
+		Ino:    ino,
 		Size:   size,
 		Atime:  uint64(info.ModificationTime),
 		Mtime:  uint64(info.ModificationTime),
