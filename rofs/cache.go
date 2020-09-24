@@ -13,6 +13,21 @@ func (fs *filesystem) path(hash string) string {
 	return path.Join(fs.cache, hash)
 }
 
+// makes sure file exists in cache and return its stat
+func (fs *filesystem) check(m meta.Meta) (os.FileInfo, error) {
+	//atomic check and download a file
+	name := fs.path(m.ID())
+	f, err := os.OpenFile(name, os.O_CREATE|os.O_RDONLY, os.ModePerm&os.FileMode(0755))
+	if err != nil {
+		return nil, err
+	}
+
+	defer f.Close()
+
+	return f.Stat()
+}
+
+// checkAndGet makes sure the file exists in cache and makes sure the file content is downloaded safely
 func (fs *filesystem) checkAndGet(m meta.Meta) (*os.File, error) {
 	//atomic check and download a file
 	name := fs.path(m.ID())
