@@ -4,20 +4,33 @@ import (
 	"io"
 	"os"
 	"path"
+	"path/filepath"
 	"syscall"
 
 	"github.com/threefoldtech/0-fs/meta"
 )
 
 func (fs *filesystem) path(hash string) string {
-	return path.Join(fs.cache, hash)
+	base := fs.cache
+	// these checks are here to avoid panicing
+	// in case a bad name (hash) was provided
+	// it will still return a valid filepath
+	if len(hash) >= 2 {
+		base = filepath.Join(base, hash[0:2])
+	}
+
+	if len(hash) >= 4 {
+		base = filepath.Join(base, hash[2:4])
+	}
+
+	return path.Join(base, hash)
 }
 
 // makes sure file exists in cache and return its stat
 func (fs *filesystem) check(m meta.Meta) (os.FileInfo, error) {
 	//atomic check and download a file
 	name := fs.path(m.ID())
-	f, err := os.OpenFile(name, os.O_CREATE|os.O_RDONLY, os.ModePerm&os.FileMode(0755))
+	f, err := fs.ensure(name)
 	if err != nil {
 		return nil, err
 	}
@@ -27,11 +40,28 @@ func (fs *filesystem) check(m meta.Meta) (os.FileInfo, error) {
 	return f.Stat()
 }
 
+func (fs *filesystem) ensure(name string) (*os.File, error) {
+	for {
+		file, err := os.OpenFile(name, os.O_CREATE|os.O_RDWR, 0444)
+		if os.IsNotExist(err) {
+			if err := os.MkdirAll(filepath.Dir(name), 0755); err != nil {
+				return nil, err
+			}
+
+			continue
+		} else if err != nil {
+			return nil, err
+		}
+
+		return file, nil
+	}
+}
+
 // checkAndGet makes sure the file exists in cache and makes sure the file content is downloaded safely
 func (fs *filesystem) checkAndGet(m meta.Meta) (*os.File, error) {
 	//atomic check and download a file
 	name := fs.path(m.ID())
-	f, err := os.OpenFile(name, os.O_CREATE|os.O_RDWR, os.ModePerm&os.FileMode(0755))
+	f, err := fs.ensure(name)
 	if err != nil {
 		return nil, err
 	}
