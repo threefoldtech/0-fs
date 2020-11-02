@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/user"
 	"path"
+	"path/filepath"
 	"strconv"
 	"sync"
 
@@ -260,7 +261,7 @@ func (s *sqlStore) get(p string) (Meta, error) {
 	}
 
 	parentPath := path.Dir(p)
-	if parentPath == "." {
+	if parentPath == "." || parentPath == "/" {
 		parentPath = ""
 	}
 
@@ -291,4 +292,46 @@ func (s *sqlStore) Get(path string) (Meta, bool) {
 		return nil, false
 	}
 	return meta, true
+}
+
+func (s *sqlStore) Walk(root string, fn WalkFn) error {
+	dir, err := s.get(root)
+	if err != nil {
+		return err
+	}
+
+	if dir.IsDir() {
+		return s.walkDir(root, dir, fn)
+	}
+
+	return fn(root, dir)
+}
+
+func (s *sqlStore) walkDir(root string, dir Meta, fn WalkFn) error {
+	err := fn(root, dir)
+	if err == ErrSkipDir {
+		return nil
+	} else if err != nil {
+		return err
+	}
+
+	for _, child := range dir.Children() {
+		path := filepath.Join(root, child.Name())
+		if child.IsDir() {
+			if err := s.walkDir(path, child, fn); err != nil {
+				return err
+			}
+
+			continue
+		}
+
+		err := fn(path, child)
+		if err == ErrSkipDir {
+			return nil
+		} else if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }

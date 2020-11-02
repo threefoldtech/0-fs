@@ -96,9 +96,9 @@ func (fs *filesystem) checkAndGet(m meta.Meta) (*os.File, error) {
 // download file from storage
 func (fs *filesystem) download(file *os.File, m meta.Meta) error {
 	downloader := Downloader{
-		Storage:   fs.storage,
-		BlockSize: m.Info().FileBlockSize,
-		Blocks:    m.Blocks(),
+		storage:   fs.storage,
+		blockSize: m.Info().FileBlockSize,
+		blocks:    m.Blocks(),
 	}
 
 	return downloader.Download(file)

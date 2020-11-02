@@ -27,10 +27,43 @@ const (
 
 // Downloader allows to get some data blocks using a pool of workers
 type Downloader struct {
-	Workers   int
-	Storage   storage.Storage
-	Blocks    []meta.BlockInfo
-	BlockSize uint64
+	workers   int
+	storage   storage.Storage
+	blocks    []meta.BlockInfo
+	blockSize uint64
+}
+
+// DownloaderOption interface
+type DownloaderOption interface {
+	apply(d *Downloader)
+}
+
+type workersOpt struct {
+	workers uint
+}
+
+func (o workersOpt) apply(d *Downloader) {
+	d.workers = int(o.workers)
+}
+
+// WithWorkers set number of workers
+func WithWorkers(nr uint) DownloaderOption {
+	return workersOpt{nr}
+}
+
+// NewDownloader creates a downloader for this meta from this storage
+func NewDownloader(storage storage.Storage, m meta.Meta, opts ...DownloaderOption) *Downloader {
+	downloader := &Downloader{
+		storage:   storage,
+		blockSize: m.Info().FileBlockSize,
+		blocks:    m.Blocks(),
+	}
+
+	for _, opt := range opts {
+		opt.apply(downloader)
+	}
+
+	return downloader
 }
 
 // OutputBlock is the result of a Dowloader worker
@@ -39,10 +72,10 @@ type OutputBlock struct {
 	Index int
 }
 
-// DownloadBlock downloads a data block identified by block
-func (d *Downloader) DownloadBlock(block meta.BlockInfo) ([]byte, error) {
+// downloadBlock downloads a data block identified by block
+func (d *Downloader) downloadBlock(block meta.BlockInfo) ([]byte, error) {
 	log.Debugf("downloading block %x", block.Key)
-	body, err := d.Storage.Get(block.Key)
+	body, err := d.storage.Get(block.Key)
 	if err != nil {
 		return nil, err
 	}
@@ -78,8 +111,8 @@ func (d *Downloader) DownloadBlock(block meta.BlockInfo) ([]byte, error) {
 
 func (d *Downloader) worker(ctx context.Context, feed <-chan int, out chan<- *OutputBlock) error {
 	for index := range feed {
-		info := d.Blocks[index]
-		raw, err := d.DownloadBlock(info)
+		info := d.blocks[index]
+		raw, err := d.downloadBlock(info)
 		if err != nil {
 			log.Errorf("downloading block %d error: %s", index+1, err)
 			return err
@@ -101,17 +134,17 @@ func (d *Downloader) worker(ctx context.Context, feed <-chan int, out chan<- *Ou
 
 //Download download the file into this output file
 func (d *Downloader) Download(output *os.File) error {
-	if len(d.Blocks) == 0 {
+	if len(d.blocks) == 0 {
 		return fmt.Errorf("no blocks provided")
 	}
 
-	if d.BlockSize == 0 {
+	if d.blockSize == 0 {
 		return fmt.Errorf("block size is not set")
 	}
 
-	workers := int(math.Min(float64(d.Workers), float64(len(d.Blocks))))
+	workers := int(math.Min(float64(d.workers), float64(len(d.blocks))))
 	if workers == 0 {
-		workers = int(math.Min(float64(DefaultDownloadWorkers), float64(len(d.Blocks))))
+		workers = int(math.Min(float64(DefaultDownloadWorkers), float64(len(d.blocks))))
 	}
 	group, ctx := errgroup.WithContext(context.Background())
 
@@ -125,12 +158,12 @@ func (d *Downloader) Download(output *os.File) error {
 		})
 	}
 
-	log.Debugf("downloading %d blocks", len(d.Blocks))
+	log.Debugf("downloading %d blocks", len(d.blocks))
 
 	//feed the workers
 	group.Go(func() error {
 		defer close(feed)
-		for index := range d.Blocks {
+		for index := range d.blocks {
 			select {
 			case feed <- index:
 			case <-ctx.Done():
@@ -148,8 +181,8 @@ func (d *Downloader) Download(output *os.File) error {
 
 	count := 1
 	for result := range results {
-		log.Debugf("writing block %d/%d of %s", count, len(d.Blocks), output.Name())
-		if _, err := output.Seek(int64(result.Index)*int64(d.BlockSize), io.SeekStart); err != nil {
+		log.Debugf("writing block %d/%d of %s", count, len(d.blocks), output.Name())
+		if _, err := output.Seek(int64(result.Index)*int64(d.blockSize), io.SeekStart); err != nil {
 			return err
 		}
 
