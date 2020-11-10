@@ -217,6 +217,8 @@ type WithAttr struct {
 	Source *fuse.Attr
 }
 
+// GetAttr override loopback GetAttr and forward stored
+// attributes from backend and not local file
 func (w *WithAttr) GetAttr(out *fuse.Attr) fuse.Status {
 	*out = *w.Source
 	return fuse.OK
