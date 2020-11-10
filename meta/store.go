@@ -93,6 +93,11 @@ type sqlStore struct {
 	groupsM sync.Mutex
 }
 
+func (s *sqlStore) Close() error {
+	_ = s.stmt.Close()
+	return s.db.Close()
+}
+
 func (s *sqlStore) hash(path string) string {
 	hasher, _ := blake2b.New(16, nil)
 	io.WriteString(hasher, path)

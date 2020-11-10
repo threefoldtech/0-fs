@@ -71,6 +71,15 @@ func (s stores) Get(p string) (Meta, bool) {
 	return nil, false
 }
 
+func (s stores) Close() error {
+	// TODO: aggregate all the errors
+	for _, store := range s {
+		store.Close()
+	}
+
+	return nil
+}
+
 // Layered return a meta store that layer the given stores in a way that last store is on top
 // Example:
 //  store = Layered(s1, s2)

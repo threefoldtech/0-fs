@@ -110,10 +110,12 @@ var ErrSkipDir = errors.New("skip this directory")
 type Store interface {
 	// Populate(entry Entry) error
 	Get(name string) (Meta, bool)
+	Close() error
 }
 
 // Walker interface, some stores can implement this interface
 type Walker interface {
+	Store
 	// Walk walks over the given path and call fn for each entry
 	// that is found under this given path, including `path` itself
 	// Note the following:
