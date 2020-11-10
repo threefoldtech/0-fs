@@ -143,10 +143,10 @@ func (fs *filesystem) Open(name string, flags uint32, context *fuse.Context) (no
 	// for fd in cache later (no new GetAttr will be done
 	// if the file is already open and it will forward
 	// local cache file attrs)
-	attr, err := fs.GetAttr(name, context)
-	if err != fuse.OK {
-		log.Errorf("Failed to fetch original attr: %s", err)
-		return nil, err
+	attr, ferr := fs.GetAttr(name, context)
+	if ferr != fuse.OK {
+		log.Errorf("Failed to fetch original attr: %s", ferr)
+		return nil, ferr
 	}
 
 	file := &WithAttr{
