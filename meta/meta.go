@@ -1,6 +1,7 @@
 package meta
 
 import (
+	"errors"
 	"fmt"
 	"syscall"
 
@@ -99,8 +100,32 @@ type Meta interface {
 	Children() []Meta
 }
 
+// WalkFn walk function
+type WalkFn func(path string, meta Meta) error
+
+// ErrSkipDir if returned by the WalkFn the directory is skipped
+var ErrSkipDir = errors.New("skip this directory")
+
 // Store is the interface to implement to read filesystem metadata from an flist
 type Store interface {
 	// Populate(entry Entry) error
 	Get(name string) (Meta, bool)
+	Close() error
+}
+
+// Walker interface, some stores can implement this interface
+type Walker interface {
+	Store
+	// Walk walks over the given path and call fn for each entry
+	// that is found under this given path, including `path` itself
+	// Note the following:
+	// - if fn return ErrSkipDir and meta.IsDir() is true
+	//   then this directory is not scanned.
+	// - if fn return ErrSkipDir and meta.IsDir() is false
+	//   then the remaining items of the current directory are skipped
+	// - Walk does not follow symlinks, so if the meta.IsDir() is false
+	//   extra checks can be done on the "file" type from the meta.Info()
+	//   if Type is SymLink the caller can decide to read the Target and
+	//   follow the link
+	Walk(path string, fn WalkFn) error
 }

@@ -1,4 +1,4 @@
-package rofs_test
+package rofs
 
 import (
 	"bytes"
@@ -15,7 +15,7 @@ import (
 	"github.com/golang/snappy"
 	"github.com/stretchr/testify/assert"
 	"github.com/threefoldtech/0-fs/meta"
-	"github.com/threefoldtech/0-fs/rofs"
+
 	"github.com/xxtea/xxtea-go/xxtea"
 )
 
@@ -73,10 +73,10 @@ func TestDownloadSuccess(t *testing.T) {
 	//initialize test data
 	storage, blocks := MakeStorage(20)
 
-	downloader := rofs.Downloader{
-		Storage:   storage,
-		Blocks:    blocks,
-		BlockSize: ChunkSize,
+	downloader := Downloader{
+		storage:   storage,
+		blocks:    blocks,
+		blockSize: ChunkSize,
 	}
 
 	out, err := ioutil.TempFile("", "dt-")
@@ -108,10 +108,10 @@ func TestDownloadFailure(t *testing.T) {
 	//initialize test data
 	storage, blocks := MakeStorage(20)
 
-	downloader := rofs.Downloader{
-		Storage:   storage,
-		Blocks:    blocks,
-		BlockSize: ChunkSize,
+	downloader := Downloader{
+		storage:   storage,
+		blocks:    blocks,
+		blockSize: ChunkSize,
 	}
 
 	//drop some blocks
@@ -138,11 +138,11 @@ func TestDownloadSingle(t *testing.T) {
 	//initialize test data
 	storage, blocks := MakeStorage(20)
 
-	downloader := rofs.Downloader{
-		Storage:   storage,
-		Blocks:    blocks,
-		BlockSize: ChunkSize,
-		Workers:   1,
+	downloader := Downloader{
+		storage:   storage,
+		blocks:    blocks,
+		blockSize: ChunkSize,
+		workers:   1,
 	}
 
 	out, err := ioutil.TempFile("", "dt-")
