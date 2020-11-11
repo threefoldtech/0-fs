@@ -105,6 +105,9 @@ func (fs *filesystem) GetAttr(name string, context *fuse.Context) (*fuse.Attr, f
 		size = uint64(len(info.LinkTarget))
 	}
 
+	// log.Debugf("mode: %v %#o", nodeType, access.Mode)
+	// log.Debugf("owner: uid %v gid %v", access.UID, access.GID)
+
 	return &fuse.Attr{
 		Ino:    ino,
 		Size:   size,
@@ -136,7 +139,22 @@ func (fs *filesystem) Open(name string, flags uint32, context *fuse.Context) (no
 		log.Errorf("Failed to open/download the file: %s", err)
 	}
 
-	return nodefs.NewReadOnlyFile(nodefs.NewLoopbackFile(f)), fuse.OK
+	// fetch original attr and store them to reuse
+	// for fd in cache later (no new GetAttr will be done
+	// if the file is already open and it will forward
+	// local cache file attrs)
+	attr, ferr := fs.GetAttr(name, context)
+	if ferr != fuse.OK {
+		log.Errorf("Failed to fetch original attr: %s", ferr)
+		return nil, ferr
+	}
+
+	file := &WithAttr{
+		File:   nodefs.NewLoopbackFile(f),
+		Source: attr,
+	}
+
+	return nodefs.NewReadOnlyFile(file), fuse.OK
 }
 
 func (fs *filesystem) OpenDir(name string, context *fuse.Context) ([]fuse.DirEntry, fuse.Status) {
@@ -190,4 +208,18 @@ func (fs *filesystem) ListXAttr(name string, context *fuse.Context) ([]string, f
 
 func (fs *filesystem) StatFs(name string) *fuse.StatfsOut {
 	return &fuse.StatfsOut{}
+}
+
+// WithAttr override nodefs.File with custom GetAttr
+// which use attr from rofs and not local file
+type WithAttr struct {
+	nodefs.File
+	Source *fuse.Attr
+}
+
+// GetAttr override loopback GetAttr and forward stored
+// attributes from backend and not local file
+func (w *WithAttr) GetAttr(out *fuse.Attr) fuse.Status {
+	*out = *w.Source
+	return fuse.OK
 }

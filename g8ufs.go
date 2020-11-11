@@ -63,11 +63,15 @@ func mountRO(target string, storage storage.Storage, meta meta.Store, cache stri
 
 	cfg := rofs.NewConfig(storage, meta, cache)
 	fs := rofs.New(cfg)
+	// opts := nodefs.Options{Debug: true}
+	opts := nodefs.Options{}
+
 	server, err := fuse.NewServer(
 		nodefs.NewFileSystemConnector(
 			pathfs.NewPathNodeFs(fs, nil).Root(),
-			&nodefs.Options{},
+			&opts,
 		).RawFS(), target, &fuse.MountOptions{
+			// Debug:         true,
 			AllowOther:    true,
 			FsName:        "g8ufs",
 			DisableXAttrs: true,
