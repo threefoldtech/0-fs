@@ -56,9 +56,9 @@ func dial(network, address string) (net.Conn, error) {
 
 	ip := ips[i]
 	if ip := ip.To4(); ip != nil {
-		return net.Dial(network, fmt.Sprintf("%s:%s", ips[i], parts[1]))
+		return net.Dial(network, fmt.Sprintf("%s:%s", ip, parts[1]))
 	} else if ip := ip.To16(); ip != nil {
-		return net.Dial(network, fmt.Sprintf("[%s]:%s", ips[i], parts[1]))
+		return net.Dial(network, fmt.Sprintf("[%s]:%s", ip, parts[1]))
 	} else {
 		return nil, fmt.Errorf("invalid ip address '%s'", ip.String())
 	}
