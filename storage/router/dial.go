@@ -42,9 +42,19 @@ func dial(network, address string) (net.Conn, error) {
 
 	if len(ips) == 0 {
 		var err error
-		ips, err = net.LookupIP(parts[0])
+		result, err := net.LookupIP(parts[0])
 		if err != nil {
 			return nil, err
+		}
+		for _, ip := range result {
+			if ip == nil {
+				continue
+			}
+			ips = append(ips, ip)
+		}
+
+		if len(ips) == 0 {
+			return nil, fmt.Errorf("can not resolve host '%s'", address)
 		}
 
 		dnsCache[parts[0]] = lookup{ips, time.Now()}
@@ -55,10 +65,10 @@ func dial(network, address string) (net.Conn, error) {
 	log.Debugf("dialling %s:%s", ips[i], parts[1])
 
 	ip := ips[i]
-	if ip := ip.To4(); ip != nil {
-		return net.Dial(network, fmt.Sprintf("%s:%s", ip.String(), parts[1]))
-	} else if ip := ip.To16(); ip != nil {
-		return net.Dial(network, fmt.Sprintf("[%s]:%s", ip.String(), parts[1]))
+	if ip4 := ip.To4(); ip4 != nil {
+		return net.Dial(network, fmt.Sprintf("%s:%s", ip4.String(), parts[1]))
+	} else if ip6 := ip.To16(); ip6 != nil {
+		return net.Dial(network, fmt.Sprintf("[%s]:%s", ip6.String(), parts[1]))
 	} else {
 		return nil, fmt.Errorf("invalid ip address '%s'", ip.String())
 	}
