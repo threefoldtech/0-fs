@@ -16,7 +16,7 @@ import (
 	g8ufs "github.com/threefoldtech/0-fs"
 )
 
-func start(cmd *Cmd, target string) (*g8ufs.G8ufs, error) {
+func start(cmd *Cmd, name, target string) (*g8ufs.G8ufs, error) {
 	// Test if the meta path is a directory
 	// if not, it's maybe a flist/tar.gz
 
@@ -29,6 +29,7 @@ func start(cmd *Cmd, target string) (*g8ufs.G8ufs, error) {
 	log.Debug("router\n", dataStore)
 
 	return g8ufs.Mount(&g8ufs.Options{
+		Name:     name,
 		Store:    metaStore,
 		Backend:  cmd.Backend,
 		Cache:    cmd.Cache,
@@ -123,8 +124,7 @@ func mount(cmd *Cmd, target string) error {
 	}
 
 	defer cntxt.Release()
-
-	fs, err = start(cmd, target)
+	fs, err = start(cmd, fmt.Sprint(syscall.Getpid()), target)
 	if err != nil {
 		return err
 	}

@@ -32,6 +32,8 @@ var (
 
 //Options are mount options
 type Options struct {
+	// Name is name given to the fs
+	Name string
 	//Backend (required) working directory where the filesystem keeps it's cache and others
 	//will be created if doesn't exist
 	Backend string
@@ -58,7 +60,7 @@ type G8ufs struct {
 	w      sync.WaitGroup
 }
 
-func mountRO(target string, storage storage.Storage, meta meta.Store, cache string) (*G8ufs, error) {
+func mountRO(name, target string, storage storage.Storage, meta meta.Store, cache string) (*G8ufs, error) {
 	log.Debugf("ro: '%s' ca: %s", target, cache)
 
 	cfg := rofs.NewConfig(storage, meta, cache)
@@ -73,7 +75,8 @@ func mountRO(target string, storage storage.Storage, meta meta.Store, cache stri
 		).RawFS(), target, &fuse.MountOptions{
 			// Debug:         true,
 			AllowOther:    true,
-			FsName:        "g8ufs",
+			FsName:        name,
+			Name:          "g8ufs",
 			DisableXAttrs: true,
 			Options:       []string{"ro", "default_permissions"},
 		})
@@ -118,12 +121,17 @@ func Mount(opt *Options) (fs *G8ufs, err error) {
 		ro = opt.Target
 	}
 
+	name := opt.Name
+	if name == "" {
+		name = "g8ufs"
+	}
+
 	if err = os.MkdirAll(ro, 0755); err != nil && !os.IsExist(err) {
 		err = fmt.Errorf("failed to create director '%s': %s", ro, err)
 		return
 	}
 
-	fs, err = mountRO(ro, opt.Storage, opt.Store, ca)
+	fs, err = mountRO(name, ro, opt.Storage, opt.Store, ca)
 	if err != nil {
 		err = fmt.Errorf("failed to do ro layer mount: %s", err)
 		return
