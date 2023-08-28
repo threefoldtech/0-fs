@@ -19,12 +19,12 @@ type Special struct {
 	iOnce sync.Once
 }
 
-//ID link id
+// ID link id
 func (s *Special) ID() string {
 	return ""
 }
 
-//Name link name
+// Name link name
 func (s *Special) Name() string {
 	s.nOnce.Do(func() {
 		s.name, _ = s.Inode.Name()
@@ -33,22 +33,22 @@ func (s *Special) Name() string {
 	return s.name
 }
 
-//IsDir returns false
+// IsDir returns false
 func (s *Special) IsDir() bool {
 	return false
 }
 
-//Blocks returns empty list
+// Blocks returns empty list
 func (s *Special) Blocks() []BlockInfo {
 	return nil
 }
 
-//Children returns empty list
+// Children returns empty list
 func (s *Special) Children() []Meta {
 	return nil
 }
 
-//Info returns empty list
+// Info returns empty list
 func (s *Special) Info() Info {
 	s.iOnce.Do(func() {
 		s.info = s.getInfo()

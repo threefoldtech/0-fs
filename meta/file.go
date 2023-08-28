@@ -8,7 +8,7 @@ import (
 	np "github.com/threefoldtech/0-fs/cap.np"
 )
 
-//File represents a file inode
+// File represents a file inode
 type File struct {
 	np.Inode
 	file   np.File
@@ -23,7 +23,7 @@ type File struct {
 	bOnce sync.Once
 }
 
-//ID returns file ID
+// ID returns file ID
 func (f *File) ID() string {
 	m := md5.New()
 	for _, blk := range f.Blocks() {
@@ -32,7 +32,7 @@ func (f *File) ID() string {
 	return fmt.Sprintf("%x", m.Sum(nil))
 }
 
-//Name return file name
+// Name return file name
 func (f *File) Name() string {
 	f.nOnce.Do(func() {
 		f.name, _ = f.Inode.Name()
@@ -41,17 +41,17 @@ func (f *File) Name() string {
 	return f.name
 }
 
-//IsDir false for files
+// IsDir false for files
 func (f *File) IsDir() bool {
 	return false
 }
 
-//Children nil for files
+// Children nil for files
 func (f *File) Children() []Meta {
 	return nil
 }
 
-//Info return meta info for this dir
+// Info return meta info for this dir
 func (f *File) Info() Info {
 	f.iOnce.Do(func() {
 		f.info = Info{
@@ -88,7 +88,7 @@ func (f *File) getBlocks() []BlockInfo {
 	return blocks
 }
 
-//Blocks loads and return blocks of file
+// Blocks loads and return blocks of file
 func (f *File) Blocks() []BlockInfo {
 	f.bOnce.Do(func() {
 		f.blocks = f.getBlocks()

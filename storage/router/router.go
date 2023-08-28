@@ -95,7 +95,7 @@ func (r *Router) updateCache(src string, key []byte, data []byte) {
 	r.feed <- chunk{key: key, data: data}
 }
 
-//Get gets key from table
+// Get gets key from table
 func (r *Router) Get(key []byte) (io.ReadCloser, error) {
 	src, data, err := r.get(key)
 	if err != nil {
@@ -123,7 +123,7 @@ func (r *Router) String() string {
 	return buf.String()
 }
 
-//Merge merge multiple routers
+// Merge merge multiple routers
 func Merge(routers ...*Router) *Router {
 	merged := Router{
 		pools: make(map[string]Pool),

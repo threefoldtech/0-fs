@@ -23,7 +23,7 @@ type lookup struct {
 	on  time.Time
 }
 
-//dial wrapper around net.Dial that provide dns lookup caching
+// dial wrapper around net.Dial that provide dns lookup caching
 func dial(network, address string) (net.Conn, error) {
 	parts := strings.SplitN(address, ":", 2)
 	if len(parts) != 2 {

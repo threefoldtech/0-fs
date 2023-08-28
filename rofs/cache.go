@@ -82,7 +82,11 @@ func (c *Cache) CheckAndGet(m meta.Meta) (*os.File, error) {
 		return nil, err
 	}
 
-	defer syscall.Flock(int(f.Fd()), syscall.LOCK_UN)
+	defer func() {
+		if err := syscall.Flock(int(f.Fd()), syscall.LOCK_UN); err != nil {
+			log.Error("failed to release file", err)
+		}
+	}()
 
 	fstat, err := f.Stat()
 
@@ -102,8 +106,14 @@ func (c *Cache) CheckAndGet(m meta.Meta) (*os.File, error) {
 		return nil, err
 	}
 
-	f.Sync()
-	f.Seek(0, io.SeekStart)
+	if err := f.Sync(); err != nil {
+		return nil, err
+	}
+
+	if _, err := f.Seek(0, io.SeekStart); err != nil {
+		return nil, err
+	}
+
 	return f, nil
 }
 

@@ -30,7 +30,7 @@ var (
 
 // type Exec func(name string, arg ...string) Starter
 
-//Options are mount options
+// Options are mount options
 type Options struct {
 	// Name is name given to the fs
 	Name string
@@ -53,7 +53,7 @@ type Options struct {
 	ReadOnly bool
 }
 
-//G8ufs struct
+// G8ufs struct
 type G8ufs struct {
 	*rofs.Config
 	layers []string
@@ -93,12 +93,14 @@ func mountRO(name, target string, storage storage.Storage, meta meta.Store, cach
 	}
 
 	log.Debugf("Waiting for fuse mount")
-	server.WaitMount()
+	if err := server.WaitMount(); err != nil {
+		return nil, err
+	}
 
 	return zfs, nil
 }
 
-//Mount mounts fuse with given options, it blocks forever until unmount is called on the given mount point
+// Mount mounts fuse with given options, it blocks forever until unmount is called on the given mount point
 func Mount(opt *Options) (fs *G8ufs, err error) {
 	backend := opt.Backend
 
@@ -141,7 +143,9 @@ func Mount(opt *Options) (fs *G8ufs, err error) {
 
 	defer func() {
 		if err != nil {
-			fs.Unmount()
+			if err := fs.Unmount(); err != nil {
+				log.Error(err)
+			}
 			return
 		}
 
@@ -171,7 +175,9 @@ func Mount(opt *Options) (fs *G8ufs, err error) {
 
 		//Note, we need to change the `rw` perm to match the `ro` perm
 		//so the final mount point has the same permissions as the flist
-		os.Chmod(rw, info.Mode())
+		if err := os.Chmod(rw, info.Mode()); err != nil {
+			return nil, err
+		}
 	}
 
 	err = syscall.Mount("overlay",
@@ -234,10 +240,12 @@ func (fs *G8ufs) watch() {
 	}
 }
 
-//Wait filesystem until it's unmounted.
+// Wait filesystem until it's unmounted.
 func (fs *G8ufs) Wait() error {
 	defer func() {
-		fs.Unmount()
+		if err := fs.Unmount(); err != nil {
+			log.Error(err)
+		}
 	}()
 
 	fs.w.Wait()
@@ -259,6 +267,10 @@ func (fs *G8ufs) Unmount() error {
 		if err := syscall.Unmount(fs.layers[i], syscall.MNT_FORCE|syscall.MNT_DETACH); err != nil {
 			errs = append(errs, err)
 		}
+	}
+
+	if len(errs) == 0 {
+		return nil
 	}
 
 	return errs

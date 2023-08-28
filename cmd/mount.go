@@ -123,7 +123,11 @@ func mount(cmd *Cmd, target string) error {
 		}
 	}
 
-	defer cntxt.Release()
+	defer func() {
+		if err := cntxt.Release(); err != nil {
+			log.Error(err)
+		}
+	}()
 	fs, err = start(cmd, fmt.Sprint(syscall.Getpid()), target)
 	if err != nil {
 		return err
@@ -156,7 +160,10 @@ func mount(cmd *Cmd, target string) error {
 		case s := <-sig:
 			if s == syscall.SIGTERM || s == syscall.SIGINT {
 				log.Info("terminating ...")
-				fs.Unmount()
+				if err := fs.Unmount(); err != nil {
+					return err
+				}
+
 				return nil
 			}
 

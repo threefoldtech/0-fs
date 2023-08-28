@@ -24,7 +24,7 @@ var (
 	}
 )
 
-//NewSimpleStorage backward compatible storage for a single endpoint
+// NewSimpleStorage backward compatible storage for a single endpoint
 func NewSimpleStorage(url string) (*router.Router, error) {
 	if len(url) == 0 {
 		return nil, fmt.Errorf("empty storage url")
@@ -56,6 +56,7 @@ NewStorage creates a storage from a router.yaml file the config syntax is
 	  - ...
 
 Example:
+
 	pools:
 	  hub:
 		00:FF: ardb://hub.gig.tech:16379
@@ -72,7 +73,7 @@ func NewStorage(c io.Reader) (*router.Router, error) {
 	return conf.Router(nil) //nil for default pool implementation
 }
 
-//Storage interface
+// Storage interface
 type Storage interface {
 	Get(key []byte) (io.ReadCloser, error)
 }

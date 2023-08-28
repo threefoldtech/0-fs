@@ -5,7 +5,7 @@ import (
 	"crypto/md5"
 	"fmt"
 	"io"
-	"io/ioutil"
+
 	"math/rand"
 	"os"
 	"testing"
@@ -32,7 +32,7 @@ type TestStorage struct {
 
 func (t *TestStorage) Get(key []byte) (io.ReadCloser, error) {
 	if data, ok := t.data[string(key)]; ok {
-		return ioutil.NopCloser(bytes.NewBuffer(data)), nil
+		return io.NopCloser(bytes.NewBuffer(data)), nil
 	}
 	return nil, fmt.Errorf("not found")
 }
@@ -79,7 +79,7 @@ func TestDownloadSuccess(t *testing.T) {
 		blockSize: ChunkSize,
 	}
 
-	out, err := ioutil.TempFile("", "dt-")
+	out, err := os.CreateTemp("", "dt-")
 	if ok := assert.NoError(t, err); !ok {
 		t.Fatal()
 	}
@@ -95,9 +95,13 @@ func TestDownloadSuccess(t *testing.T) {
 	}
 
 	hash := md5.New()
-	out.Seek(0, 0) // rewind file
+	if _, err := out.Seek(0, 0); err != nil {
+		t.Error(err)
+	}
 
-	io.Copy(hash, out)
+	if _, err := io.Copy(hash, out); err != nil {
+		t.Error(err)
+	}
 
 	if ok := assert.Equal(t, storage.hash, hash.Sum(nil)); !ok {
 		t.Error("wrong hash")
@@ -118,7 +122,7 @@ func TestDownloadFailure(t *testing.T) {
 	delete(storage.data, "block-1")
 	delete(storage.data, "block-19")
 
-	out, err := ioutil.TempFile("", "dt-")
+	out, err := os.CreateTemp("", "dt-")
 	if ok := assert.NoError(t, err); !ok {
 		t.Fatal()
 	}
@@ -145,7 +149,7 @@ func TestDownloadSingle(t *testing.T) {
 		workers:   1,
 	}
 
-	out, err := ioutil.TempFile("", "dt-")
+	out, err := os.CreateTemp("", "dt-")
 	if ok := assert.NoError(t, err); !ok {
 		t.Fatal()
 	}
@@ -161,9 +165,13 @@ func TestDownloadSingle(t *testing.T) {
 	}
 
 	hash := md5.New()
-	out.Seek(0, 0) // rewind file
+	if _, err := out.Seek(0, 0); err != nil {
+		t.Error(err)
+	}
 
-	io.Copy(hash, out)
+	if _, err := io.Copy(hash, out); err != nil {
+		t.Error(err)
+	}
 
 	if ok := assert.Equal(t, storage.hash, hash.Sum(nil)); !ok {
 		t.Error("wrong hash")

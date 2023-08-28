@@ -10,11 +10,12 @@ ldflags = '-w -s -X $(base).Branch=$(branch) -X $(base).Revision=$(revision) -X 
 default: build
 
 getdeps:
-	@echo "Installing golint" && go install golang.org/x/lint/golint
-	@echo "Installing gocyclo" && go install github.com/fzipp/gocyclo
-	@echo "Installing deadcode" && go get -u github.com/remyoudompheng/go-misc/deadcode
-	@echo "Installing misspell" && go install github.com/client9/misspell/cmd/misspell
-	@echo "Installing ineffassign" && go install github.com/gordonklaus/ineffassign
+	@echo "Installing golint" && go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+	@echo "Installing gocyclo" && go install github.com/fzipp/gocyclo/cmd/gocyclo@latest
+	@echo "Installing deadcode" && go install github.com/remyoudompheng/go-misc/deadcode@latest
+	@echo "Installing misspell" && go install github.com/client9/misspell/cmd/misspell@latest
+	@echo "Installing ineffassign" && go install github.com/gordonklaus/ineffassign@latest
+	@echo "Installing staticcheck" && go install honnef.co/go/tools/cmd/staticcheck@latest
 
 verifiers: vet fmt lint cyclo spelling staticcheck
 
@@ -28,7 +29,7 @@ fmt:
 
 lint:
 	@echo "Running $@"
-	@${GOPATH}/bin/golint -set_exit_status $(shell go list ./...)
+	@${GOPATH}/bin/golangci-lint run
 
 ineffassign:
 	@echo "Running $@"
@@ -46,7 +47,7 @@ spelling:
 	@${GOPATH}/bin/misspell -i monitord -error $(shell ls **/*.go)
 
 staticcheck:
-	go run honnef.co/go/tools/cmd/staticcheck -- ./...
+	@${GOPATH}/bin/staticcheck -- ./...
 
 check: test
 

@@ -132,7 +132,7 @@ func (d *Downloader) worker(ctx context.Context, feed <-chan int, out chan<- *Ou
 	return nil
 }
 
-//Download download the file into this output file
+// Download download the file into this output file
 func (d *Downloader) Download(output *os.File) error {
 	if len(d.blocks) == 0 {
 		return fmt.Errorf("no blocks provided")
@@ -175,7 +175,9 @@ func (d *Downloader) Download(output *os.File) error {
 	})
 
 	go func() {
-		group.Wait()
+		if err := group.Wait(); err != nil {
+			log.Error(err)
+		}
 		close(results)
 	}()
 

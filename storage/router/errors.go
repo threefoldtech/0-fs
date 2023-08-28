@@ -22,10 +22,10 @@ var (
 	ErrUnknownScheme = fmt.Errorf("unknown scheme")
 )
 
-//Errors holds many errors at once, suitable for config validation
+// Errors holds many errors at once, suitable for config validation
 type Errors []error
 
-//Add add error to errors
+// Add add error to errors
 func (e Errors) Add(err error) Errors {
 	return append(e, err)
 }
@@ -35,7 +35,7 @@ func (e Errors) HasErrors() bool {
 	return len(e) > 0
 }
 
-//Error implements the errors.Error interface
+// Error implements the errors.Error interface
 func (e Errors) Error() string {
 	var buf bytes.Buffer
 	buf.WriteString(fmt.Sprintf("found %d errors", len(e)))

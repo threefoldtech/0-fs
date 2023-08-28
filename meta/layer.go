@@ -82,8 +82,9 @@ func (s stores) Close() error {
 
 // Layered return a meta store that layer the given stores in a way that last store is on top
 // Example:
-//  store = Layered(s1, s2)
-//  store.Get(p) will search s2 first, then s1
+//
+//	store = Layered(s1, s2)
+//	store.Get(p) will search s2 first, then s1
 func Layered(store ...Store) Store {
 	if len(store) == 1 {
 		return store[0]

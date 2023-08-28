@@ -105,7 +105,7 @@ func layerLocalStore(local string, store *router.Router) (*router.Router, error)
 	return router.Merge(localRouter, store), nil
 }
 
-//getStoresFromCmd helper function to initialize stores from cmd line
+// getStoresFromCmd helper function to initialize stores from cmd line
 func getStoresFromCmd(cmd *Cmd) (metaStore meta.Store, dataStore *router.Router, err error) {
 	metaStore, err = getMetaStore(cmd.Meta)
 	if err != nil {

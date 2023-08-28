@@ -11,16 +11,16 @@ var (
 	}
 )
 
-//Destination defines a route destination
+// Destination defines a route destination
 type Destination *url.URL
 
-//Rule defines a hash routing rule
+// Rule defines a hash routing rule
 type Rule struct {
 	Range
 	Destination Destination
 }
 
-//NewDestination parse and validate destination
+// NewDestination parse and validate destination
 func NewDestination(dest string) (Destination, error) {
 	u, err := url.Parse(dest)
 	if err != nil {
