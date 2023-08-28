@@ -3,10 +3,10 @@ package rofs
 import (
 	"bytes"
 	"crypto/md5"
+	"crypto/rand"
 	"fmt"
 	"io"
 
-	"math/rand"
 	"os"
 	"testing"
 
@@ -37,7 +37,7 @@ func (t *TestStorage) Get(key []byte) (io.ReadCloser, error) {
 	return nil, fmt.Errorf("not found")
 }
 
-func MakeStorage(chunks int) (*TestStorage, []meta.BlockInfo) {
+func MakeStorage(chunks int) (*TestStorage, []meta.BlockInfo, error) {
 	s := TestStorage{
 		data: make(map[string][]byte),
 	}
@@ -47,7 +47,10 @@ func MakeStorage(chunks int) (*TestStorage, []meta.BlockInfo) {
 
 	for i := 0; i < chunks; i++ {
 		buf := make([]byte, ChunkSize)
-		rand.Read(buf)
+		if _, err := rand.Read(buf); err != nil {
+			return nil, nil, err
+		}
+
 		hash.Write(buf)
 		hasher, _ := blake2b.New(16, nil)
 		hasher.Write(buf)
@@ -66,12 +69,15 @@ func MakeStorage(chunks int) (*TestStorage, []meta.BlockInfo) {
 	}
 
 	s.hash = hash.Sum(nil)
-	return &s, blocks
+	return &s, blocks, nil
 }
 
 func TestDownloadSuccess(t *testing.T) {
 	//initialize test data
-	storage, blocks := MakeStorage(20)
+	storage, blocks, err := MakeStorage(20)
+	if err != nil {
+		t.Error(err)
+	}
 
 	downloader := Downloader{
 		storage:   storage,
@@ -110,7 +116,10 @@ func TestDownloadSuccess(t *testing.T) {
 
 func TestDownloadFailure(t *testing.T) {
 	//initialize test data
-	storage, blocks := MakeStorage(20)
+	storage, blocks, err := MakeStorage(20)
+	if err != nil {
+		t.Error(err)
+	}
 
 	downloader := Downloader{
 		storage:   storage,
@@ -140,7 +149,10 @@ func TestDownloadFailure(t *testing.T) {
 
 func TestDownloadSingle(t *testing.T) {
 	//initialize test data
-	storage, blocks := MakeStorage(20)
+	storage, blocks, err := MakeStorage(20)
+	if err != nil {
+		t.Error(err)
+	}
 
 	downloader := Downloader{
 		storage:   storage,

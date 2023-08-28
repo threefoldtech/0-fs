@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"sync"
 
 	"github.com/garyburd/redigo/redis"
@@ -104,7 +103,7 @@ func (r *Router) Get(key []byte) (io.ReadCloser, error) {
 
 	r.updateCache(src, key, data)
 
-	return ioutil.NopCloser(bytes.NewBuffer(data)), nil
+	return io.NopCloser(bytes.NewBuffer(data)), nil
 }
 
 func (r *Router) String() string {

@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"os/signal"
 	"path"
@@ -43,7 +42,7 @@ func start(cmd *Cmd, name, target string) (*g8ufs.G8ufs, error) {
 func reload(fs *g8ufs.G8ufs, cmd *Cmd) error {
 	log.Info("reload flists")
 	//load extra flist from external file /backend/.layered
-	content, err := ioutil.ReadFile(path.Join(cmd.Backend, ".layered"))
+	content, err := os.ReadFile(path.Join(cmd.Backend, ".layered"))
 	if os.IsNotExist(err) {
 		return nil //nothing to do
 	} else if err != nil {
