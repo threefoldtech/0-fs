@@ -33,12 +33,6 @@ func (c *Config) SetMetaStore(store meta.Store) {
 	c.store = store
 }
 
-// SetDataStorage sets the filesystem data storage in runtime
-func (c *Config) SetDataStorage(storage storage.Storage) {
-	//TODO: should this be done atomically in a way that is synched ?
-	c.cache.Storage = storage
-}
-
 type filesystem struct {
 	pathfs.FileSystem
 	*Config
@@ -48,7 +42,7 @@ type filesystem struct {
 func NewConfig(storage storage.Storage, store meta.Store, cache string) *Config {
 	return &Config{
 		store: store,
-		cache: Cache{Cache: cache, Storage: storage},
+		cache: Cache{cache: cache, storage: storage},
 	}
 }
 

@@ -12,12 +12,19 @@ import (
 )
 
 type Cache struct {
-	Cache   string
-	Storage storage.Storage
+	cache   string
+	storage storage.Storage
+}
+
+func NewCache(path string, storage storage.Storage) Cache {
+	return Cache{
+		cache:   path,
+		storage: storage,
+	}
 }
 
 func (c *Cache) path(hash string) string {
-	base := c.Cache
+	base := c.cache
 	// these checks are here to avoid panicing
 	// in case a bad name (hash) was provided
 	// it will still return a valid filepath
@@ -103,7 +110,7 @@ func (c *Cache) CheckAndGet(m meta.Meta) (*os.File, error) {
 // download file from storage
 func (c *Cache) download(file *os.File, m meta.Meta) error {
 	downloader := Downloader{
-		storage:   c.Storage,
+		storage:   c.storage,
 		blockSize: m.Info().FileBlockSize,
 		blocks:    m.Blocks(),
 	}
