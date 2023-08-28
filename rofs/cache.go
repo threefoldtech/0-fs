@@ -8,10 +8,16 @@ import (
 	"syscall"
 
 	"github.com/threefoldtech/0-fs/meta"
+	"github.com/threefoldtech/0-fs/storage"
 )
 
-func (fs *filesystem) path(hash string) string {
-	base := fs.cache
+type Cache struct {
+	Cache   string
+	Storage storage.Storage
+}
+
+func (c *Cache) path(hash string) string {
+	base := c.Cache
 	// these checks are here to avoid panicing
 	// in case a bad name (hash) was provided
 	// it will still return a valid filepath
@@ -27,10 +33,10 @@ func (fs *filesystem) path(hash string) string {
 }
 
 // makes sure file exists in cache and return its stat
-func (fs *filesystem) check(m meta.Meta) (os.FileInfo, error) {
+func (c *Cache) check(m meta.Meta) (os.FileInfo, error) {
 	//atomic check and download a file
-	name := fs.path(m.ID())
-	f, err := fs.ensure(name)
+	name := c.path(m.ID())
+	f, err := c.ensure(name)
 	if err != nil {
 		return nil, err
 	}
@@ -40,7 +46,7 @@ func (fs *filesystem) check(m meta.Meta) (os.FileInfo, error) {
 	return f.Stat()
 }
 
-func (fs *filesystem) ensure(name string) (*os.File, error) {
+func (c *Cache) ensure(name string) (*os.File, error) {
 	for {
 		file, err := os.OpenFile(name, os.O_CREATE|os.O_RDWR, 0444)
 		if os.IsNotExist(err) {
@@ -57,11 +63,11 @@ func (fs *filesystem) ensure(name string) (*os.File, error) {
 	}
 }
 
-// checkAndGet makes sure the file exists in cache and makes sure the file content is downloaded safely
-func (fs *filesystem) checkAndGet(m meta.Meta) (*os.File, error) {
+// CheckAndGet makes sure the file exists in cache and makes sure the file content is downloaded safely
+func (c *Cache) CheckAndGet(m meta.Meta) (*os.File, error) {
 	//atomic check and download a file
-	name := fs.path(m.ID())
-	f, err := fs.ensure(name)
+	name := c.path(m.ID())
+	f, err := c.ensure(name)
 	if err != nil {
 		return nil, err
 	}
@@ -79,10 +85,11 @@ func (fs *filesystem) checkAndGet(m meta.Meta) (*os.File, error) {
 
 	info := m.Info()
 	if fstat.Size() == int64(info.Size) {
+		log.Debug("cache hit for file with hash", m.ID())
 		return f, nil
 	}
 
-	if err := fs.download(f, m); err != nil {
+	if err := c.download(f, m); err != nil {
 		f.Close()
 		os.Remove(name)
 		return nil, err
@@ -94,9 +101,9 @@ func (fs *filesystem) checkAndGet(m meta.Meta) (*os.File, error) {
 }
 
 // download file from storage
-func (fs *filesystem) download(file *os.File, m meta.Meta) error {
+func (c *Cache) download(file *os.File, m meta.Meta) error {
 	downloader := Downloader{
-		storage:   fs.storage,
+		storage:   c.Storage,
 		blockSize: m.Info().FileBlockSize,
 		blocks:    m.Blocks(),
 	}
