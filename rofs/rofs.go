@@ -42,7 +42,7 @@ type filesystem struct {
 func NewConfig(storage storage.Storage, store meta.Store, cache string) *Config {
 	return &Config{
 		store: store,
-		cache: Cache{cache: cache, storage: storage},
+		cache: NewCache(cache, storage),
 	}
 }
 

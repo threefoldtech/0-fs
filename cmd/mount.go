@@ -159,11 +159,7 @@ func mount(cmd *Cmd, target string) error {
 		case s := <-sig:
 			if s == syscall.SIGTERM || s == syscall.SIGINT {
 				log.Info("terminating ...")
-				if err := fs.Unmount(); err != nil {
-					return err
-				}
-
-				return nil
+				return fs.Unmount()
 			}
 
 			if err := reload(fs, cmd); err != nil {
