@@ -6,7 +6,7 @@ require (
 	github.com/codegangsta/cli v1.20.0
 	github.com/garyburd/redigo v1.6.2
 	github.com/golang/snappy v0.0.1
-	github.com/hanwen/go-fuse/v2 v2.0.3
+	github.com/hanwen/go-fuse/v2 v2.3.0
 	github.com/hashicorp/golang-lru v0.5.4
 	github.com/mattn/go-sqlite3 v1.14.0
 	github.com/op/go-logging v0.0.0-20160315200505-970db520ece7
