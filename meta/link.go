@@ -19,12 +19,12 @@ type Link struct {
 	iOnce sync.Once
 }
 
-//ID link id
+// ID link id
 func (l *Link) ID() string {
 	return ""
 }
 
-//Name link name
+// Name link name
 func (l *Link) Name() string {
 	l.nOnce.Do(func() {
 		l.name, _ = l.Inode.Name()
@@ -33,22 +33,22 @@ func (l *Link) Name() string {
 	return l.name
 }
 
-//IsDir returns false
+// IsDir returns false
 func (l *Link) IsDir() bool {
 	return false
 }
 
-//Blocks returns empty list
+// Blocks returns empty list
 func (l *Link) Blocks() []BlockInfo {
 	return nil
 }
 
-//Children returns empty list
+// Children returns empty list
 func (l *Link) Children() []Meta {
 	return nil
 }
 
-//Info returns empty list
+// Info returns empty list
 func (l *Link) Info() Info {
 	l.iOnce.Do(func() {
 		target, _ := l.link.Target()

@@ -6,7 +6,7 @@ import (
 	np "github.com/threefoldtech/0-fs/cap.np"
 )
 
-//Dir represents a dir inode
+// Dir represents a dir inode
 type Dir struct {
 	np.Dir
 	store  *sqlStore
@@ -21,12 +21,12 @@ type Dir struct {
 	cOnce sync.Once
 }
 
-//ID empty string for a dir
+// ID empty string for a dir
 func (d *Dir) ID() string {
 	return ""
 }
 
-//Name return file name
+// Name return file name
 func (d *Dir) Name() string {
 	d.nOnce.Do(func() {
 		d.name, _ = d.Dir.Name()
@@ -35,17 +35,17 @@ func (d *Dir) Name() string {
 	return d.name
 }
 
-//IsDir returns true for a dir
+// IsDir returns true for a dir
 func (d *Dir) IsDir() bool {
 	return true
 }
 
-//Blocks return file block, nil in case of a dir
+// Blocks return file block, nil in case of a dir
 func (d *Dir) Blocks() []BlockInfo {
 	return nil
 }
 
-//Info return meta info for this dir
+// Info return meta info for this dir
 func (d *Dir) Info() Info {
 	d.iOnce.Do(func() {
 		d.info = Info{
@@ -60,7 +60,7 @@ func (d *Dir) Info() Info {
 	return d.info
 }
 
-//Children return items in this dir
+// Children return items in this dir
 func (d *Dir) Children() []Meta {
 	d.cOnce.Do(func() {
 		d.children = d.getChildren()

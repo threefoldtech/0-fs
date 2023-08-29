@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"os/signal"
 	"path"
@@ -43,7 +42,7 @@ func start(cmd *Cmd, name, target string) (*g8ufs.G8ufs, error) {
 func reload(fs *g8ufs.G8ufs, cmd *Cmd) error {
 	log.Info("reload flists")
 	//load extra flist from external file /backend/.layered
-	content, err := ioutil.ReadFile(path.Join(cmd.Backend, ".layered"))
+	content, err := os.ReadFile(path.Join(cmd.Backend, ".layered"))
 	if os.IsNotExist(err) {
 		return nil //nothing to do
 	} else if err != nil {
@@ -123,7 +122,11 @@ func mount(cmd *Cmd, target string) error {
 		}
 	}
 
-	defer cntxt.Release()
+	defer func() {
+		if err := cntxt.Release(); err != nil {
+			log.Error(err)
+		}
+	}()
 	fs, err = start(cmd, fmt.Sprint(syscall.Getpid()), target)
 	if err != nil {
 		return err
@@ -156,8 +159,7 @@ func mount(cmd *Cmd, target string) error {
 		case s := <-sig:
 			if s == syscall.SIGTERM || s == syscall.SIGINT {
 				log.Info("terminating ...")
-				fs.Unmount()
-				return nil
+				return fs.Unmount()
 			}
 
 			if err := reload(fs, cmd); err != nil {

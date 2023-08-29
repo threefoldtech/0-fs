@@ -23,21 +23,14 @@ var (
 // Config represents a filesystem configuration object
 // Configuration objects can be used to manipulate some filesystem flags in runtime
 type Config struct {
-	store   meta.Store
-	storage storage.Storage
-	cache   string
+	store meta.Store
+	cache Cache
 }
 
-//SetMetaStore sets the filesystem meta store in runtime.
+// SetMetaStore sets the filesystem meta store in runtime.
 func (c *Config) SetMetaStore(store meta.Store) {
 	//TODO: should this be done atomically in a way that is synched ?
 	c.store = store
-}
-
-//SetDataStorage sets the filesystem data storage in runtime
-func (c *Config) SetDataStorage(storage storage.Storage) {
-	//TODO: should this be done atomically in a way that is synched ?
-	c.storage = storage
 }
 
 type filesystem struct {
@@ -45,16 +38,15 @@ type filesystem struct {
 	*Config
 }
 
-//NewConfig creates a new filesystem config object with given meta store, and data storage and local cache directory
+// NewConfig creates a new filesystem config object with given meta store, and data storage and local cache directory
 func NewConfig(storage storage.Storage, store meta.Store, cache string) *Config {
 	return &Config{
-		store:   store,
-		storage: storage,
-		cache:   cache,
+		store: store,
+		cache: NewCache(cache, storage),
 	}
 }
 
-//New creates a new filesystem object with given configuration
+// New creates a new filesystem object with given configuration
 func New(cfg *Config) pathfs.FileSystem {
 	fs := &filesystem{
 		FileSystem: pathfs.NewDefaultFileSystem(),
@@ -79,7 +71,7 @@ func (fs *filesystem) GetAttr(name string, context *fuse.Context) (*fuse.Attr, f
 	var ino uint64 = 0
 
 	if info.Type == meta.RegularType {
-		stat, err := fs.check(m)
+		stat, err := fs.cache.check(m)
 		if err != nil {
 			return nil, fuse.EIO
 		}
@@ -134,7 +126,7 @@ func (fs *filesystem) Open(name string, flags uint32, context *fuse.Context) (no
 	if !ok {
 		return nil, fuse.ENOENT
 	}
-	f, err := fs.checkAndGet(m)
+	f, err := fs.cache.CheckAndGet(m)
 	if err != nil {
 		log.Errorf("Failed to open/download the file: %s", err)
 	}

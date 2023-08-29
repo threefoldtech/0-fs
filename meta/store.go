@@ -45,7 +45,7 @@ const (
 	AccessCacheSize = 64
 )
 
-//NewStore creates a new meta store with path p
+// NewStore creates a new meta store with path p
 func NewStore(p string) (Store, error) {
 	p = path.Join(p, SQLiteDBName)
 	db, err := sql.Open("sqlite3", fmt.Sprintf("file:%s?mode=ro", p))
@@ -98,14 +98,17 @@ func (s *sqlStore) Close() error {
 	return s.db.Close()
 }
 
-func (s *sqlStore) hash(path string) string {
+func (s *sqlStore) hash(path string) (string, error) {
 	hasher, _ := blake2b.New(16, nil)
-	io.WriteString(hasher, path)
+	_, err := io.WriteString(hasher, path)
+	if err != nil {
+		return "", err
+	}
 
-	return fmt.Sprintf("%x", hasher.Sum(nil))
+	return fmt.Sprintf("%x", hasher.Sum(nil)), nil
 }
 
-//getACI gets aci object with key from db
+// getACI gets aci object with key from db
 func (s *sqlStore) getACI(key string) (*np.ACI, error) {
 	if aci, ok := s.acl.Get(key); ok {
 		return aci.(*np.ACI), nil
@@ -172,7 +175,7 @@ func (s *sqlStore) lookUpGroup(name string) int {
 	return gid
 }
 
-//getAccess gets access object from db
+// getAccess gets access object from db
 func (s *sqlStore) getAccess(key string) (Access, error) {
 	aci, err := s.getACI(key)
 	if err != nil {
@@ -201,18 +204,22 @@ func (s *sqlStore) getAccess(key string) (Access, error) {
 	}, nil
 }
 
-//getDir gets dir entry from db
+// getDir gets dir entry from db
 func (s *sqlStore) getDir(path string) (*Dir, error) {
 	if path == "." {
 		path = ""
 	}
 
-	hash := s.hash(path)
+	hash, err := s.hash(path)
+	if err != nil {
+		return nil, err
+	}
+
 	log.Debugf("hash(%s) == %s", path, hash)
 	return s.getDirWithHash(hash)
 }
 
-//getDir gets dir entry from db
+// getDir gets dir entry from db
 func (s *sqlStore) getDirWithHash(hash string) (*Dir, error) {
 	row := s.stmt.QueryRow(hash)
 	var data []byte

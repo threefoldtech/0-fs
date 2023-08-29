@@ -5,7 +5,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"math"
 	"os"
 
@@ -82,7 +81,7 @@ func (d *Downloader) downloadBlock(block meta.BlockInfo) ([]byte, error) {
 
 	defer body.Close()
 
-	data, err := ioutil.ReadAll(body)
+	data, err := io.ReadAll(body)
 	if err != nil {
 		return nil, err
 	}
@@ -132,7 +131,7 @@ func (d *Downloader) worker(ctx context.Context, feed <-chan int, out chan<- *Ou
 	return nil
 }
 
-//Download download the file into this output file
+// Download download the file into this output file
 func (d *Downloader) Download(output *os.File) error {
 	if len(d.blocks) == 0 {
 		return fmt.Errorf("no blocks provided")
@@ -175,7 +174,9 @@ func (d *Downloader) Download(output *os.File) error {
 	})
 
 	go func() {
-		group.Wait()
+		if err := group.Wait(); err != nil {
+			log.Error(err)
+		}
 		close(results)
 	}()
 

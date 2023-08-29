@@ -3,7 +3,6 @@ package router
 import (
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 
 	"github.com/pkg/errors"
@@ -15,13 +14,13 @@ var (
 	DefaultPoolFactory PoolFactory = NewScanPool
 )
 
-//PoolFactory defines a pool factory method
+// PoolFactory defines a pool factory method
 type PoolFactory func(...Rule) Pool
 
-//PoolConfig is a map from hash-range to destination
+// PoolConfig is a map from hash-range to destination
 type PoolConfig map[string]string
 
-//Config defines config file format
+// Config defines config file format
 type Config struct {
 	Pools map[string]PoolConfig `yaml:"pools"`
 
@@ -29,7 +28,7 @@ type Config struct {
 	Cache  []string `yaml:"cache"`
 }
 
-//Valid validate config structure
+// Valid validate config structure
 func (c *Config) Valid() error {
 	var err Errors
 
@@ -69,7 +68,7 @@ func (c *Config) Valid() error {
 	return nil
 }
 
-//Router returns a router that corresponds to configuration object
+// Router returns a router that corresponds to configuration object
 func (c *Config) Router(factory PoolFactory) (*Router, error) {
 	if factory == nil {
 		factory = DefaultPoolFactory
@@ -107,9 +106,9 @@ func (c *Config) Router(factory PoolFactory) (*Router, error) {
 	return &router, nil
 }
 
-//NewConfig loads config from reader, expecting yaml formatted config
+// NewConfig loads config from reader, expecting yaml formatted config
 func NewConfig(in io.Reader) (*Config, error) {
-	buf, err := ioutil.ReadAll(in)
+	buf, err := io.ReadAll(in)
 	if err != nil {
 		return nil, err
 	}
@@ -121,7 +120,7 @@ func NewConfig(in io.Reader) (*Config, error) {
 	return &config, config.Valid()
 }
 
-//NewConfigFromFile loads config from yaml file
+// NewConfigFromFile loads config from yaml file
 func NewConfigFromFile(name string) (*Config, error) {
 	file, err := os.Open(name)
 	if err != nil {

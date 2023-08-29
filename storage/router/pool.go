@@ -13,7 +13,7 @@ const (
 	blockGetRetries = 3
 )
 
-//Pool defines a pool interface
+// Pool defines a pool interface
 type Pool interface {
 	Range
 	Route(h []byte) Destination
@@ -36,14 +36,14 @@ type ScanPool struct {
 	m sync.Mutex
 }
 
-//NewScanPool initialize a new scan pool
+// NewScanPool initialize a new scan pool
 func NewScanPool(rules ...Rule) Pool {
 	return &ScanPool{
 		Rules: rules,
 	}
 }
 
-//In checks if hash is in pool
+// In checks if hash is in pool
 func (p *ScanPool) In(h []byte) bool {
 	for _, rule := range p.Rules {
 		if rule.In(h) {
@@ -54,7 +54,7 @@ func (p *ScanPool) In(h []byte) bool {
 	return false
 }
 
-//Route matches hash against the pool and return the first matched destination
+// Route matches hash against the pool and return the first matched destination
 func (p *ScanPool) Route(h []byte) Destination {
 	for _, rule := range p.Rules {
 		if rule.In(h) {
@@ -65,7 +65,7 @@ func (p *ScanPool) Route(h []byte) Destination {
 	return nil
 }
 
-//Routes returns all possible destinations for hash h.
+// Routes returns all possible destinations for hash h.
 func (p *ScanPool) Routes(h []byte) []Destination {
 	var dest []Destination
 	for _, rule := range p.Rules {
@@ -146,7 +146,7 @@ func (p *ScanPool) get(pool *redis.Pool, key []byte) ([]byte, error) {
 	return bytes, err
 }
 
-//Get key from pool
+// Get key from pool
 func (p *ScanPool) Get(key []byte) ([]byte, error) {
 	dests := p.Routes(key)
 	if len(dests) == 0 {
@@ -174,7 +174,7 @@ func (p *ScanPool) Get(key []byte) ([]byte, error) {
 	return nil, ErrNotFound
 }
 
-//Set key to data
+// Set key to data
 func (p *ScanPool) Set(key, data []byte) error {
 	dest := p.Route(key)
 	if dest == nil {

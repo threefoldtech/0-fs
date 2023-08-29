@@ -1,7 +1,7 @@
 package router
 
 import (
-	"io/ioutil"
+	"io"
 	"sync"
 	"testing"
 
@@ -68,7 +68,7 @@ func TestRouterGetSuccess(t *testing.T) {
 		t.Fatal()
 	}
 
-	result, _ := ioutil.ReadAll(ret)
+	result, _ := io.ReadAll(ret)
 
 	if ok := assert.Equal(t, value, string(result)); !ok {
 		t.Error()
@@ -108,7 +108,7 @@ func TestRouterGetLocalMiss(t *testing.T) {
 		t.Fatal()
 	}
 
-	result, _ := ioutil.ReadAll(ret)
+	result, _ := io.ReadAll(ret)
 
 	if ok := assert.Equal(t, value, string(result)); !ok {
 		t.Error()
@@ -198,7 +198,7 @@ func TestMerget(t *testing.T) {
 		t.Fatal()
 	}
 
-	result, _ := ioutil.ReadAll(ret)
+	result, _ := io.ReadAll(ret)
 
 	if ok := assert.Equal(t, value, string(result)); !ok {
 		t.Error()

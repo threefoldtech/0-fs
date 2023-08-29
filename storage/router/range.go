@@ -10,7 +10,7 @@ var (
 	rangeMatchRegex = regexp.MustCompile(`^(?P<start>[0-9a-fA-F]+)(?::(?P<end>[0-9a-fA-F]+))?$`)
 )
 
-//HexToBytes converts a hexstring to byte array
+// HexToBytes converts a hexstring to byte array
 func HexToBytes(s string) []byte {
 	if len(s) == 0 {
 		return nil
@@ -28,7 +28,7 @@ func HexToBytes(s string) []byte {
 	return data
 }
 
-//Range defines a hash range matcher
+// Range defines a hash range matcher
 type Range interface {
 	In(h []byte) bool
 }
@@ -66,7 +66,7 @@ func (r rangeMatch) In(h []byte) bool {
 	return true
 }
 
-//NewRange parse range from string
+// NewRange parse range from string
 func NewRange(r string) (Range, error) {
 	match := rangeMatchRegex.FindStringSubmatch(r)
 	if match == nil {
